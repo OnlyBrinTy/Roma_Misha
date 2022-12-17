@@ -3,7 +3,6 @@ class Movement_Hor:
     pass
 
 
-# этот класс на тот случай если будет многоуровневая платформа
 class Falling:
     # todo падение с скорением
     pass
