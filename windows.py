@@ -11,8 +11,8 @@ class ExtraWindow:
     button_image = pygame.image.load('assets/button.png')
 
     def __init__(self):
-        img_rect = self.button_image.get_rect()
-        center_x = (EXTRA_WIDTH - img_rect.width) // 2
+        img_rect = self.button_image.get_rect()  # Размеры картинки
+        center_x = (EXTRA_WIDTH - img_rect.width) // 2  # координата х для центрального расположения
 
         self.start_button = Button((center_x, 50), self.button_image, 'Start Game')
         self.continue_button = Button((center_x, 250), self.button_image, 'Continue Game')
