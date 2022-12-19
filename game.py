@@ -1,15 +1,17 @@
+from texture import Texture
 import pygame
 import os
 
+BACKGROUND_COLOR = '#71ddee'
 WIDTH, HEIGHT = 1280, 720
 FPS = 60
 
 
-class Player(pygame.sprite.Sprite):
+class Player(pygame.sprite.Sprite, Texture):
     def __init__(self, pos, group):
-        super().__init__(group)
-        self.image = pygame.image.load('assets/player.png').convert_alpha()
-        self.rect = self.image.get_rect(center=pos)
+        pygame.sprite.Sprite.__init__(self, group)
+        Texture.__init__(self, pos, 'player.png')
+
         self.direction = pygame.math.Vector2()
         self.speed = 5
 
@@ -35,61 +37,23 @@ class Player(pygame.sprite.Sprite):
         self.rect.center += self.direction * self.speed
 
 
-class CameraGroup(pygame.sprite.Group):
-    def __init__(self):
-        super().__init__()
-        self.display_surface = pygame.display.get_surface()
+class Camera(pygame.sprite.GroupSingle):
+    offset = pygame.math.Vector2()
 
-        # camera offset
-        self.offset = pygame.math.Vector2()
-        self.half_w = self.display_surface.get_size()[0] // 2
-        self.half_h = self.display_surface.get_size()[1] // 2
+    def camera_centering(self):
+        self.offset.x = self.sprite.rect.centerx - WIDTH // 2
+        self.offset.y = self.sprite.rect.centery - WIDTH // 2
 
-        # ground
-        self.ground_surf = pygame.image.load('assets/ground.png').convert_alpha()
-        self.ground_rect = self.ground_surf.get_rect(topleft=(0, 0))
+    def draw(self, textures, screen):
+        self.camera_centering()
 
-        # camera speed
-        self.keyboard_speed = 5
-        self.mouse_speed = 0.2
+        screen.fill(BACKGROUND_COLOR)
 
-        # zoom
-        self.zoom_scale = 1
-        self.internal_surf_size = (2500, 2500)
-        self.internal_surf = pygame.Surface(self.internal_surf_size, pygame.SRCALPHA)
-        self.internal_rect = self.internal_surf.get_rect(center=(self.half_w, self.half_h))
-        self.internal_surface_size_vector = pygame.math.Vector2(self.internal_surf_size)
-        self.internal_offset = pygame.math.Vector2()
-        self.internal_offset.x = self.internal_surf_size[0] // 2 - self.half_w
-        self.internal_offset.y = self.internal_surf_size[1] // 2 - self.half_h
+        for texture in textures:
+            display_position = texture.rect.topleft - self.offset
+            screen.blit(texture.image, display_position)
 
-    def center_target_camera(self, target):
-        self.offset.x = target.rect.centerx - self.half_w
-        self.offset.y = target.rect.centery - self.half_h
-
-    def custom_draw(self, player):
-
-        self.center_target_camera(player)
-        # self.box_target_camera(player)
-        # self.keyboard_control()
-        # self.mouse_control()
-        # self.zoom_keyboard_control()
-
-        self.internal_surf.fill('#71ddee')
-
-        # ground
-        ground_offset = self.ground_rect.topleft - self.offset + self.internal_offset
-        self.internal_surf.blit(self.ground_surf, ground_offset)
-
-        # active elements
-        for sprite in sorted(self.sprites(), key=lambda sprite: sprite.rect.centery):
-            offset_pos = sprite.rect.topleft - self.offset + self.internal_offset
-            self.internal_surf.blit(sprite.image, offset_pos)
-
-        scaled_surf = pygame.transform.scale(self.internal_surf, self.internal_surface_size_vector * self.zoom_scale)
-        scaled_rect = scaled_surf.get_rect(center=(self.half_w, self.half_h))
-
-        self.display_surface.blit(scaled_surf, scaled_rect)
+        pygame.display.update()
 
 
 class Game:
@@ -99,8 +63,9 @@ class Game:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), vsync=True)
         clock = pygame.time.Clock()
 
-        self.camera_group = CameraGroup()
-        self.player = Player((640, 360), self.camera_group)
+        self.camera = Camera()
+        self.player = Player((WIDTH // 2, HEIGHT // 2), self.camera)
+        self.textures = [Texture((0, 0), 'ground.png'), self.player]
 
         while True:
             for event in pygame.event.get():
@@ -111,12 +76,7 @@ class Game:
                     if event.button == 1:
                         pass
 
-            self.draw()
+            self.camera.update()
+            self.camera.draw(self.textures, self.screen)
+
             clock.tick(FPS)
-
-    def draw(self):
-        self.screen.fill('white')
-        self.camera_group.update()
-        self.camera_group.custom_draw(self.player)
-
-        pygame.display.update()
