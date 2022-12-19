@@ -8,8 +8,7 @@ class Button:
     def __init__(self, position, image, text):
         self.text = text
         self.image = image
-        self.rect = self.image.get_rect()   # Прямоугольник картинки
-        self.rect.topleft = position    # Координата левого верхнего угла
+        self.rect = self.image.get_rect(topleft=position)   # Прямоугольник картинки
 
         # Настройка шрифтов и размеров
         font = int(self.rect.width // len(self.text) * 1.5)
