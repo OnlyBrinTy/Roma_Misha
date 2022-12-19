@@ -1,4 +1,5 @@
 from button import Button
+from game import Game
 import pygame
 
 WIDTH, HEIGHT = 1400, 1000
@@ -7,27 +8,28 @@ background_color = (41, 52, 80)
 
 
 class ExtraWindow:
-    screen = pygame.display.set_mode((EXTRA_WIDTH, EXTRA_HEIGHT))  # Создание экрана с заданными рамерами
-    button_image = pygame.image.load('assets/button.png')  # Загрузка заднего фона кнопки
+    button_image = pygame.image.load('assets/button.png')
 
     def __init__(self, buttons=(), labels=()):
         pygame.init()
 
+        self.screen = pygame.display.set_mode((EXTRA_WIDTH, EXTRA_HEIGHT))
+
         self.labels = labels
         self.buttons = buttons
 
-        self.running = True
-        while self.running:  # Игровой цикл
+        while True:
             self.draw()
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.display.quit()
-                    self.running = False
+                    break
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    for button in self.buttons:
-                        if button.rect.collidepoint(event.pos):
-                            self.action(button())
+                    if event.button == 1:
+                        for button in self.buttons:
+                            if button.rect.collidepoint(event.pos):
+                                self.action(button())
 
 
 class SettingsWindow(ExtraWindow):
@@ -41,14 +43,13 @@ class SettingsWindow(ExtraWindow):
 
         super().__init__((easy_button, medium_button, hard_button))
 
-    def action(self, button_text):  # Обработка нажатий на кнопки
-        self.running = False
-        if button_text == 'easy':
-            pass
-        elif button_text == 'medium':
-            pass
-        elif button_text == 'hard':
-            pass
+    @staticmethod
+    def action(button_text):
+        pygame.display.quit()
+
+        difficulty = {'easy': 1, 'medium': 2, 'hard': 3}[button_text]
+
+        Game()
 
     def draw(self):
         self.screen.fill(background_color)
@@ -69,8 +70,9 @@ class StartWindow(ExtraWindow):
 
         super().__init__((start_button, continue_button))
 
-    def action(self, button_text):
-        self.running = False
+    @staticmethod
+    def action(button_text):
+        pygame.display.quit()
 
         if button_text == 'start':  # Обработка нажатия на кнопку start
             SettingsWindow()
