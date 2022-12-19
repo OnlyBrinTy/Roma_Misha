@@ -33,11 +33,13 @@ class ExtraWindow:
 class SettingsWindow(ExtraWindow):
     def __init__(self):
         img_rect = self.button_image.get_rect()  # Размеры картинки
+        image_amount = 3
         center_x = (EXTRA_WIDTH - img_rect.width) // 2  # координата х для центрального расположения
+        center_y = (EXTRA_HEIGHT - img_rect.height * image_amount) // (image_amount + 1)
 
-        easy_button = Button((center_x, 25), self.button_image, 'easy')
-        medium_button = Button((center_x, 150), self.button_image, 'medium')
-        hard_button = Button((center_x, 275), self.button_image, 'hard')
+        easy_button = Button((center_x, center_y), self.button_image, 'easy')
+        medium_button = Button((center_x, center_y * 2 + img_rect.height), self.button_image, 'medium')
+        hard_button = Button((center_x, center_y * 3 + img_rect.height * 2), self.button_image, 'hard')
 
         super().__init__((easy_button, medium_button, hard_button))
 
@@ -62,10 +64,12 @@ class SettingsWindow(ExtraWindow):
 class StartWindow(ExtraWindow):
     def __init__(self):
         img_rect = self.button_image.get_rect()  # Размеры картинки
+        image_amount = 2  # Количество картинок на экране
         center_x = (EXTRA_WIDTH - img_rect.width) // 2  # координата х для центрального расположения
+        center_y = (EXTRA_HEIGHT - img_rect.height * image_amount) // (image_amount + 1)
 
-        start_button = Button((center_x, 50), self.button_image, 'start game')
-        continue_button = Button((center_x, 250), self.button_image, 'continue game')
+        start_button = Button((center_x, center_y), self.button_image, 'start game')
+        continue_button = Button((center_x, center_y * 2 + img_rect.height), self.button_image, 'continue game')
 
         super().__init__((start_button, continue_button))
 
