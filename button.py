@@ -1,7 +1,7 @@
 import pygame
 pygame.init()
 
-WHITE = (255, 255, 255)
+background_color = (255, 255, 255)
 
 
 class Button:
@@ -14,7 +14,7 @@ class Button:
         # Настройка шрифтов и размеров
         font = int(self.rect.width // len(self.text) * 1.5)
         font = pygame.font.Font('assets/pixeboy.ttf', font)
-        self.label = font.render(self.text, True, WHITE)
+        self.label = font.render(self.text, True, background_color)
 
         label_width, label_height = font.size(self.text)   # Размеры текста
         # Центрирование текста в кнопке

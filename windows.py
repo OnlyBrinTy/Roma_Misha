@@ -3,7 +3,7 @@ import pygame
 
 WIDTH, HEIGHT = 1400, 1000
 EXTRA_WIDTH, EXTRA_HEIGHT = 600, 400
-WHITE = (255, 255, 255)
+background_color = (255, 255, 255)
 
 
 class ExtraWindow:
@@ -51,7 +51,7 @@ class SettingsWindow(ExtraWindow):
             pass
 
     def draw(self):
-        self.screen.fill(WHITE)
+        self.screen.fill(background_color)
 
         for button in self.buttons:
             button.draw(self.screen)
@@ -78,7 +78,7 @@ class StartWindow(ExtraWindow):
             pass
 
     def draw(self):
-        self.screen.fill(WHITE)
+        self.screen.fill(background_color)
 
         for button in self.buttons:
             button.draw(self.screen)
