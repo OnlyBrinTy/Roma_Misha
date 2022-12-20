@@ -9,9 +9,9 @@ FPS = 60
 
 
 class Player(pygame.sprite.Sprite, Texture):    # Это спрайт для группы  camera
-    def __init__(self, pos, group):
+    def __init__(self, blit_pos, group):
         pygame.sprite.Sprite.__init__(self, group)
-        Texture.__init__(self, pos, 'player.png')
+        Texture.__init__(self, blit_pos, 'player.png')
 
         self.mask = pygame.mask.from_surface(self.image)
         self.direction = pygame.math.Vector2()
@@ -58,7 +58,9 @@ class Player(pygame.sprite.Sprite, Texture):    # Это спрайт для г�
 
     def update(self):
         self.input()
+
         self.rect.center += self.direction * self.result_speed
+        self.blit_pos += self.direction * self.result_speed
 
 
 class Camera(pygame.sprite.GroupSingle):
@@ -74,7 +76,7 @@ class Camera(pygame.sprite.GroupSingle):
         screen.fill(BACKGROUND_COLOR)
 
         for texture in textures:
-            display_position = texture.rect.topleft - self.offset
+            display_position = texture.blit_pos - self.offset
             screen.blit(texture.image, display_position)
 
         pygame.display.update()
@@ -82,7 +84,6 @@ class Camera(pygame.sprite.GroupSingle):
 
 class Game:
     def __init__(self):
-        running = True
         pygame.init()
 
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), vsync=True)
@@ -93,6 +94,7 @@ class Game:
 
         clock = pygame.time.Clock()
         quarters = {(True, False): 0, (False, False): 1, (False, True): 2, (True, True): 3}
+        running = True
 
         while running:
             for event in pygame.event.get():
@@ -120,5 +122,6 @@ class Game:
 
             self.camera.update()
             self.camera.draw(self.textures, self.screen)
+            pygame.display.update()
 
             clock.tick(FPS)
