@@ -14,8 +14,6 @@ class ExtraWindow:
 
         self.screen = pygame.display.set_mode((EXTRA_WIDTH, EXTRA_HEIGHT))
 
-        self.screen = pygame.display.set_mode((EXTRA_WIDTH, EXTRA_HEIGHT))
-
         self.labels = labels
         self.buttons = buttons
 
