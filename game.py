@@ -18,7 +18,7 @@ class Player(pygame.sprite.Sprite, Texture):    # Это спрайт для г�
         self.speed_x = 0
         self.speed_y = 0
         self.result_speed = 0
-        self.max_speed = 8
+        self.max_speed = 4
 
     def input(self):
         keys = pygame.key.get_pressed()
@@ -26,14 +26,14 @@ class Player(pygame.sprite.Sprite, Texture):    # Это спрайт для г�
 
         if keys[pygame.K_a] and self.direction.x != 1:
             if self.speed_x < self.max_speed:
-                self.speed_x += 1
+                self.speed_x += 0.1
             self.direction.x = -1
         elif keys[pygame.K_d] and self.direction.x != -1:
             if self.speed_x < self.max_speed:
-                self.speed_x += 1
+                self.speed_x += 0.1
             self.direction.x = 1
         elif self.speed_x > 0:
-            self.speed_x -= 2
+            self.speed_x -= 0.2
         elif self.speed_x < 0:
             self.speed_x = 0
         elif self.speed_x == 0:
@@ -41,25 +41,20 @@ class Player(pygame.sprite.Sprite, Texture):    # Это спрайт для г�
 
         if keys[pygame.K_w] and self.direction.y != 1:
             if self.speed_y < self.max_speed:
-                self.speed_y += 1
+                self.speed_y += 0.2
             self.direction.y = -1
         elif keys[pygame.K_s] and self.direction.y != -1:
             if self.speed_y < self.max_speed:
-                self.speed_y += 1
+                self.speed_y += 0.2
             self.direction.y = 1
         elif self.speed_y > 0:
-            self.speed_y -= 2
+            self.speed_y -= 0.2
         elif self.speed_y < 0:
             self.speed_y = 0
         elif self.speed_y == 0:
             self.direction.y = 0
 
-        if self.speed_x > self.speed_y:
-            self.result_speed = self.speed_x
-        elif self.speed_x < self.speed_y:
-            self.result_speed = self.speed_y
-        else:
-            self.result_speed = self.speed_x
+        self.result_speed = int(max(self.speed_x, self.speed_y))
 
     def update(self):
         self.input()
