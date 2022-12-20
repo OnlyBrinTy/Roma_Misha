@@ -15,28 +15,55 @@ class Player(pygame.sprite.Sprite, Texture):    # Это спрайт для г�
 
         self.mask = pygame.mask.from_surface(self.image)
         self.direction = pygame.math.Vector2()
-        self.speed = 5
+        self.speed_x = 0
+        self.speed_y = 0
+        self.result_speed = 0
+        self.max_speed = 8
 
     def input(self):
         keys = pygame.key.get_pressed()
+        self.result_speed = 0
 
-        if keys[pygame.K_UP]:
+        if keys[pygame.K_a] and self.direction.x != 1:
+            if self.speed_x < self.max_speed:
+                self.speed_x += 1
+            self.direction.x = -1
+        elif keys[pygame.K_d] and self.direction.x != -1:
+            if self.speed_x < self.max_speed:
+                self.speed_x += 1
+            self.direction.x = 1
+        elif self.speed_x > 0:
+            self.speed_x -= 2
+        elif self.speed_x < 0:
+            self.speed_x = 0
+        elif self.speed_x == 0:
+            self.direction.x = 0
+
+        if keys[pygame.K_w] and self.direction.y != 1:
+            if self.speed_y < self.max_speed:
+                self.speed_y += 1
             self.direction.y = -1
-        elif keys[pygame.K_DOWN]:
+        elif keys[pygame.K_s] and self.direction.y != -1:
+            if self.speed_y < self.max_speed:
+                self.speed_y += 1
             self.direction.y = 1
-        else:
+        elif self.speed_y > 0:
+            self.speed_y -= 2
+        elif self.speed_y < 0:
+            self.speed_y = 0
+        elif self.speed_y == 0:
             self.direction.y = 0
 
-        if keys[pygame.K_RIGHT]:
-            self.direction.x = 1
-        elif keys[pygame.K_LEFT]:
-            self.direction.x = -1
+        if self.speed_x > self.speed_y:
+            self.result_speed = self.speed_x
+        elif self.speed_x < self.speed_y:
+            self.result_speed = self.speed_y
         else:
-            self.direction.x = 0
+            self.result_speed = self.speed_x
 
     def update(self):
         self.input()
-        self.rect.center += self.direction * self.speed
+        self.rect.center += self.direction * self.result_speed
 
 
 class Camera(pygame.sprite.GroupSingle):
@@ -60,22 +87,23 @@ class Camera(pygame.sprite.GroupSingle):
 
 class Game:
     def __init__(self):
+        running = True
         pygame.init()
 
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), vsync=True)
 
         self.camera = Camera()
-        self.player = Player((0, 0), self.camera)
+        self.player = Player((WIDTH // 2, HEIGHT // 2), self.camera)
         self.textures = [Texture((0, 0), 'ground.png'), self.player]
 
         clock = pygame.time.Clock()
         quarters = {(True, False): 0, (False, False): 1, (False, True): 2, (True, True): 3}
 
-        while True:
+        while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.display.quit()
-                    break
+                    running = False
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
                         pass

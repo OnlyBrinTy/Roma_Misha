@@ -12,6 +12,7 @@ class ExtraWindow:
     def __init__(self, buttons=(), labels=()):
         pygame.init()
 
+        self.text = 10
         self.screen = pygame.display.set_mode((EXTRA_WIDTH, EXTRA_HEIGHT))
 
         self.labels = labels
@@ -34,7 +35,7 @@ class ExtraWindow:
 class SettingsWindow(ExtraWindow):
     def __init__(self):
         img_rect = self.button_image.get_rect()  # Размеры картинки
-        image_amount = 3
+        image_amount = 3  # Количество картинок на экране
         center_x = (EXTRA_WIDTH - img_rect.width) // 2  # координата х для центрального расположения
         center_y = (EXTRA_HEIGHT - img_rect.height * image_amount) // (image_amount + 1)
 
