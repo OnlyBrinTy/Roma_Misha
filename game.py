@@ -1,4 +1,4 @@
-from math import degrees
+from math import atan, degrees
 from texture import Texture
 import pygame
 import os
@@ -69,7 +69,7 @@ class Game:
         self.textures = [Texture((0, 0), 'ground.png'), self.player]
 
         clock = pygame.time.Clock()
-        quarters = {(True, True): 0, (False, True): 1, (False, False): 2, (True, False): 3}
+        quarters = {(True, False): 0, (False, False): 1, (False, True): 2, (True, True): 3}
 
         while True:
             for event in pygame.event.get():
@@ -81,12 +81,17 @@ class Game:
                         pass
                 elif event.type == pygame.MOUSEMOTION:
                     x_dist, y_dist = event.pos - pygame.Vector2(self.player.rect.center - self.camera.offset)
+
+                    quart_num = quarters[(x_dist >= 0, y_dist >= 0)]
                     if x_dist == 0 or y_dist == 0:
                         add_angle = 0
                     else:
-                        add_angle = degrees(abs(x_dist / y_dist))
+                        add_angle = degrees(atan(x_dist / y_dist))
 
-                    angle = add_angle + 90 * quarters[(x_dist >= 0, y_dist > 0)]
+                        if quart_num in (0, 2):
+                            add_angle += 90
+
+                    angle = add_angle + 90 * quart_num
 
                     self.player.set_angle(angle)
 
@@ -94,6 +99,3 @@ class Game:
             self.camera.draw(self.textures, self.screen)
 
             clock.tick(FPS)
-
-
-Game()
