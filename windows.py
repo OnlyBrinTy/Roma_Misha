@@ -1,9 +1,13 @@
 from button import Button
+from weapon import Weapon
 import pygame
+
+pygame.init()
 
 WIDTH, HEIGHT = 1400, 1000
 EXTRA_WIDTH, EXTRA_HEIGHT = 600, 400
 background_color = (255, 255, 255)
+text_color = (247, 239, 174)
 
 
 class ExtraWindow:
@@ -12,6 +16,7 @@ class ExtraWindow:
 
     def __init__(self, buttons=(), labels=()):
         pygame.init()
+        self.text = 10
 
         self.labels = labels
         self.buttons = buttons
@@ -28,6 +33,9 @@ class ExtraWindow:
                     for button in self.buttons:
                         if button.rect.collidepoint(event.pos):
                             self.action(button())
+                    if event.button == 1:
+                        pass
+                        # Weapon.draw(self.screen)
 
 
 class SettingsWindow(ExtraWindow):
@@ -88,6 +96,8 @@ class StartWindow(ExtraWindow):
             button.draw(self.screen)
 
         pygame.display.update()
+
+    # def 
 
 
 if __name__ == '__main__':
