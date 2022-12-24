@@ -3,6 +3,7 @@ from texture import Texture
 import pygame
 import os
 
+MAX_SPEED = 10
 BACKGROUND_COLOR = '#71ddee'
 WIDTH, HEIGHT = 1280, 720
 FPS = 60
@@ -13,62 +14,36 @@ class Player(pygame.sprite.Sprite, Texture):    # Это спрайт для г�
         pygame.sprite.Sprite.__init__(self, group)
         Texture.__init__(self, blit_pos, 'player.png')
 
-        self.mask = pygame.mask.from_surface(self.image)
         self.direction = pygame.math.Vector2()
-        self.speed_x = 0
-        self.speed_y = 0
-        self.result_speed = 0
-        self.max_speed = 4
 
     def input(self):
+        def formula(x, y):
+            return max(0.1, (abs(x) + abs(y)) ** 0.125)
+
         keys = pygame.key.get_pressed()
-        self.result_speed = 0
 
-        if keys[pygame.K_a] and self.direction.x != 1:
-            if self.speed_x < self.max_speed:
-                self.speed_x += 0.1
-            self.direction.x = -1
-        elif keys[pygame.K_d] and self.direction.x != -1:
-            if self.speed_x < self.max_speed:
-                self.speed_x += 0.1
-            self.direction.x = 1
-        elif self.speed_x > 0:
-            self.speed_x -= 0.2
-        elif self.speed_x < 0:
-            self.speed_x = 0
-        elif self.speed_x == 0:
-            self.direction.x = 0
+        if keys[pygame.K_w]:
+            self.direction.y = max(-MAX_SPEED, self.direction.y - formula(*self.direction))
+        elif keys[pygame.K_s]:
+            self.direction.y = min(MAX_SPEED, self.direction.y + formula(*self.direction))
 
-        if keys[pygame.K_w] and self.direction.y != 1:
-            if self.speed_y < self.max_speed:
-                self.speed_y += 0.2
-            self.direction.y = -1
-        elif keys[pygame.K_s] and self.direction.y != -1:
-            if self.speed_y < self.max_speed:
-                self.speed_y += 0.2
-            self.direction.y = 1
-        elif self.speed_y > 0:
-            self.speed_y -= 0.2
-        elif self.speed_y < 0:
-            self.speed_y = 0
-        elif self.speed_y == 0:
-            self.direction.y = 0
-
-        self.result_speed = int(max(self.speed_x, self.speed_y))
+        if keys[pygame.K_a]:
+            self.direction.x = max(-MAX_SPEED, self.direction.x - formula(*self.direction))
+        elif keys[pygame.K_d]:
+            self.direction.x = min(MAX_SPEED, self.direction.x + formula(*self.direction))
 
     def update(self):
         self.input()
 
-        self.rect.center += self.direction * self.result_speed
-        self.blit_pos += self.direction * self.result_speed
-
+        self.rect.center += self.direction
+        self.blit_pos += self.direction
 
 class Camera(pygame.sprite.GroupSingle):
     offset = pygame.math.Vector2()
 
     def camera_centering(self):
-        self.offset.x = self.sprite.rect.centerx - WIDTH // 2
-        self.offset.y = self.sprite.rect.centery - HEIGHT // 2
+        self.offset.x = self.sprite.rect.center[0] - WIDTH // 2
+        self.offset.y = self.sprite.rect.center[1] - HEIGHT // 2
 
     def draw(self, textures, screen):
         self.camera_centering()
@@ -93,7 +68,6 @@ class Game:
         self.textures = [Texture((0, 0), 'ground.png'), self.player]
 
         clock = pygame.time.Clock()
-        quarters = {(True, False): 0, (False, False): 1, (False, True): 2, (True, True): 3}
         running = True
 
         while running:
@@ -105,23 +79,37 @@ class Game:
                     if event.button == 1:
                         pass
                 elif event.type == pygame.MOUSEMOTION:
-                    x_dist, y_dist = event.pos - pygame.Vector2(self.player.rect.center - self.camera.offset)
-
-                    quart_num = quarters[(x_dist >= 0, y_dist >= 0)]
-                    if x_dist == 0 or y_dist == 0:
-                        add_angle = 0
-                    else:
-                        add_angle = degrees(atan(x_dist / y_dist))
-
-                        if quart_num in (0, 2):
-                            add_angle += 90
-
-                    angle = add_angle + 90 * quart_num
-
-                    self.player.set_angle(angle)
+                    self.player.set_angle(self.check_angle(event.pos))
 
             self.camera.update()
             self.camera.draw(self.textures, self.screen)
             pygame.display.update()
 
             clock.tick(FPS)
+
+    def check_angle(self, mouse_pos):
+        quarters = {(True, False): 0, (False, False): 1, (False, True): 2, (True, True): 3}
+
+        x_dist, y_dist = mouse_pos - pygame.Vector2(self.player.rect.center - self.camera.offset)
+        quart_num = quarters[(x_dist > 0, y_dist > 0)]
+
+        if x_dist == 0 or y_dist == 0:
+            add_angle = 0
+
+            if x_dist == 0:
+                if y_dist > 0:
+                    quart_num = 3
+                else:
+                    quart_num = 1
+            else:
+                if x_dist > 0:
+                    quart_num = 0
+                else:
+                    quart_num = 2
+        else:
+            add_angle = degrees(atan(x_dist / y_dist))
+
+            if quart_num in (0, 2):
+                add_angle += 90
+
+        return add_angle + 90 * quart_num

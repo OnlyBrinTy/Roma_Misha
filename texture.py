@@ -1,10 +1,11 @@
+from rectangle import Rect
 import pygame
 
 
 class Texture:
     def __init__(self, blit_pos, img_source):
         self._original_image = self.image = pygame.image.load(f'assets/{img_source}').convert_alpha()
-        self.rect = self.image.get_rect(topleft=blit_pos)
+        self.rect = Rect(self.image, topleft=blit_pos)
         self.blit_pos = blit_pos
 
     def set_angle(self, angle):
