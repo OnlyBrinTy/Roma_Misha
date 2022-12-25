@@ -1,15 +1,17 @@
 from math import atan, degrees
 from texture import Texture
+import weapon
 import pygame
+
 import os
 
-MAX_SPEED = 10
+MAX_SPEED = 5
 BACKGROUND_COLOR = '#71ddee'
 WIDTH, HEIGHT = 1280, 720
 FPS = 60
 
 
-class Player(pygame.sprite.Sprite, Texture):    # Это спрайт для группы  camera
+class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для группы  camera
     def __init__(self, blit_pos, group):
         pygame.sprite.Sprite.__init__(self, group)
         Texture.__init__(self, blit_pos, 'player.png')
@@ -26,6 +28,8 @@ class Player(pygame.sprite.Sprite, Texture):    # Это спрайт для г�
             self.direction.y = max(-MAX_SPEED, self.direction.y - formula(*self.direction))
         elif keys[pygame.K_s]:
             self.direction.y = min(MAX_SPEED, self.direction.y + formula(*self.direction))
+        # else:
+            # self.direction.y -=
 
         if keys[pygame.K_a]:
             self.direction.x = max(-MAX_SPEED, self.direction.x - formula(*self.direction))
@@ -37,6 +41,7 @@ class Player(pygame.sprite.Sprite, Texture):    # Это спрайт для г�
 
         self.rect.center += self.direction
         self.blit_pos += self.direction
+
 
 class Camera(pygame.sprite.GroupSingle):
     offset = pygame.math.Vector2()
@@ -77,7 +82,7 @@ class Game:
                     running = False
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
-                        pass
+                        self.screen.blit(weapon.bullet(), (10, 10))
                 elif event.type == pygame.MOUSEMOTION:
                     self.player.set_angle(self.check_angle(event.pos))
 
