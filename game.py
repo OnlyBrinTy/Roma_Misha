@@ -1,14 +1,27 @@
+from threading import Thread
 from math import atan, degrees
 from texture import Texture
 import weapon
 import pygame
 
-import os
-
-MAX_SPEED = 5
+MAX_SPEED = 7
 BACKGROUND_COLOR = '#71ddee'
 WIDTH, HEIGHT = 1280, 720
 FPS = 60
+
+
+class MovingThread(Thread):
+    def __init__(self, *groups_to_update):
+        super().__init__()
+
+        self.groups_to_update = groups_to_update
+
+    def run(self):
+        while True:
+            for group in self.groups_to_update:
+                group.update()
+
+            pygame.time.delay(25)
 
 
 class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для группы  camera
@@ -28,8 +41,6 @@ class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для гр�
             self.direction.y = max(-MAX_SPEED, self.direction.y - formula(*self.direction))
         elif keys[pygame.K_s]:
             self.direction.y = min(MAX_SPEED, self.direction.y + formula(*self.direction))
-        # else:
-            # self.direction.y -=
 
         if keys[pygame.K_a]:
             self.direction.x = max(-MAX_SPEED, self.direction.x - formula(*self.direction))
@@ -72,6 +83,8 @@ class Game:
         self.player = Player((WIDTH // 2, HEIGHT // 2), self.camera)
         self.textures = [Texture((0, 0), 'ground.png'), self.player]
 
+        self.thread = MovingThread(self.camera)
+        self.thread.start()
         clock = pygame.time.Clock()
         running = True
 
@@ -86,7 +99,6 @@ class Game:
                 elif event.type == pygame.MOUSEMOTION:
                     self.player.set_angle(self.check_angle(event.pos))
 
-            self.camera.update()
             self.camera.draw(self.textures, self.screen)
             pygame.display.update()
 
