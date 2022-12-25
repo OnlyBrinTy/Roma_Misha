@@ -6,13 +6,13 @@ background_color = (255, 255, 255)
 
 
 class Weapon:
-    def __init__(self):
-        self.screen = pygame.display.set_mode((400, 400))
-        self.screen.fill((255, 255, 255))
-        self.bullet_amo = 10
+    def __init__(self, screen):
+        self.screen = screen
+        bullet = BulletAmount()
+        bullet_amo = bullet.get_bullet()
         self.font = pygame.font.Font('assets/pixeboy.ttf', 35)
 
-        amo_label = self.font.render(str(self.bullet_amo), True, text_color)
+        amo_label = self.font.render(str(bullet_amo), True, text_color)
         self.screen.blit(amo_label, (10, 10))
 
         pygame.display.update()
@@ -23,16 +23,29 @@ class Weapon:
                     exit()
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
-                        if self.bullet_amo > 0:
-                            self.bullet_amo -= 1
-                            self.draw(self.screen, self.bullet_amo)
+                        if bullet_amo > 0:
+                            self.draw(bullet_amo)
 
-    def draw(self, screen, bullet_amo):
-        screen.fill(background_color)
+    def draw(self, bullet_amo):
         amo_label = self.font.render(str(bullet_amo), True, text_color)
-        screen.blit(amo_label, (10, 10))
-
-        pygame.display.update()
+        self.screen.blit(amo_label, (10, 10))
 
 
-Weapon()
+class CurrentWeapon:
+    pass
+
+
+class Bullet(pygame.sprite.Sprite):
+    pass
+
+
+class BulletAmount:
+    def __init__(self):
+        self.bullet = 10
+        self.font = pygame.font.Font('assets/pixeboy.ttf', 35)
+
+    def get_bullet(self):
+        self.bullet -= 1
+        amo_label = self.font.render(str(self.bullet), True, text_color)
+
+        return amo_label
