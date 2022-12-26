@@ -6,8 +6,8 @@ import pygame
 
 MAX_SPEED = 7
 BACKGROUND_COLOR = '#71ddee'
-WIDTH, HEIGHT = 1280, 720
-FPS = 60
+WIDTH, HEIGHT = 1600, 900
+FPS = 120
 
 
 class MovingThread(Thread):
@@ -31,44 +31,25 @@ class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для гр�
 
         self.direction = pygame.math.Vector2()
 
-    def input(self):    # тут я ещё не доделал
+    def input(self):
         def formula(x, y):
             return max(0.1, (abs(x) + abs(y)) ** 0.125)
 
-        adjust = formula(*self.direction)
         keys = pygame.key.get_pressed()
 
-        at_max_speed = abs(self.direction.x) + abs(self.direction.y) >= MAX_SPEED
-
-        if keys[pygame.K_w]:
-            self.direction.y -= adjust
-        elif keys[pygame.K_s]:
+        if keys[pygame.K_w] and not keys[pygame.K_s]:
+            self.direction.y = max(-MAX_SPEED, self.direction.y - formula(*self.direction))
+        elif keys[pygame.K_s] and not keys[pygame.K_w]:
             self.direction.y = min(MAX_SPEED, self.direction.y + formula(*self.direction))
         else:
             self.direction.y *= 0.7
 
-        # if at_max_speed:
-        #     if self.direction.x > 0:
-        #         self.direction.x -= adjust
-        #     elif not -adjust <= self.direction.x >= adjust:
-        #         self.direction.x += adjust
-        #     else:
-        #         self.direction.y = max(-MAX_SPEED, min(MAX_SPEED, self.direction.y))
-
-        if keys[pygame.K_a]:
-            self.direction.x -= adjust
-        elif keys[pygame.K_d]:
-            self.direction.x += adjust
+        if keys[pygame.K_a] and not keys[pygame.K_d]:
+            self.direction.x = max(-MAX_SPEED, self.direction.x - formula(*self.direction))
+        elif keys[pygame.K_d] and not keys[pygame.K_a]:
+            self.direction.x = min(MAX_SPEED, self.direction.x + formula(*self.direction))
         else:
             self.direction.x *= 0.7
-
-        # if at_max_speed:
-        #     if self.direction.y > 0:
-        #         self.direction.y -= adjust
-        #     elif not -adjust <= self.direction.y >= adjust:
-        #         self.direction.y += adjust
-        #     else:
-        #         self.direction.x = max(-MAX_SPEED, min(MAX_SPEED, self.direction.x))
 
     def update(self):
         self.input()
@@ -80,16 +61,16 @@ class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для гр�
 class Camera(pygame.sprite.GroupSingle):
     offset = pygame.math.Vector2()
 
-    def camera_centering(self):     # установка сдвига камеры так, чтобы игрок оказался по центру
+    def camera_centering(self):
         self.offset.x = self.sprite.rect.center[0] - WIDTH // 2
         self.offset.y = self.sprite.rect.center[1] - HEIGHT // 2
 
     def draw(self, textures, screen):
         self.camera_centering()
 
-        screen.fill(BACKGROUND_COLOR)   # заливка фона
+        screen.fill(BACKGROUND_COLOR)
 
-        for texture in textures:     # каждая текстура выводятся на экран друг за другом с учётом сдвига камеры
+        for texture in textures:
             display_position = texture.blit_pos - self.offset
             screen.blit(texture.image, display_position)
 
@@ -102,14 +83,10 @@ class Game:
 
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), vsync=True)
 
-        self.camera = Camera()  # через камеру происходит отображение всего на экране
+        self.camera = Camera()
         self.player = Player((WIDTH // 2, HEIGHT // 2), self.camera)
-        self.textures = [Texture((0, 0), 'ground.webp'), self.player]
-        # в textures лежат текстуры, которые будут затем выводится на экран
-        # они лежат в порядке отображения. Сначала рисуем землю и поверх неё рисуем игрока
+        self.textures = [Texture((0, 0), 'ground.png'), self.player]
 
-        self.thread = MovingThread(self.camera)     # обработку игрока вынесена в отдельный поток
-        self.thread.start()     # запускаем поток
         self.thread = MovingThread(self.camera)
         self.thread.start()
         weap = weapon.BulletAmount()
@@ -118,6 +95,9 @@ class Game:
         running = True
 
         while running:
+            self.camera.draw(self.textures, self.screen)
+
+            clock.tick(FPS)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.display.quit()
@@ -128,12 +108,9 @@ class Game:
                 elif event.type == pygame.MOUSEMOTION:
                     self.player.set_angle(self.check_angle(event.pos))
 
-            self.camera.draw(self.textures, self.screen)
             pygame.display.update()
 
-            clock.tick(FPS)
-
-    def check_angle(self, mouse_pos):   # определение угла поворота в зависимости от положение мыши
+    def check_angle(self, mouse_pos):
         quarters = {(True, False): 0, (False, False): 1, (False, True): 2, (True, True): 3}
 
         x_dist, y_dist = mouse_pos - pygame.Vector2(self.player.rect.center - self.camera.offset)
