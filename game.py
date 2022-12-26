@@ -6,8 +6,8 @@ import pygame
 
 MAX_SPEED = 7
 BACKGROUND_COLOR = '#71ddee'
-WIDTH, HEIGHT = 1280, 720
-FPS = 60
+WIDTH, HEIGHT = 1600, 900
+FPS = 120
 
 
 class MovingThread(Thread):
@@ -41,11 +41,15 @@ class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для гр�
             self.direction.y = max(-MAX_SPEED, self.direction.y - formula(*self.direction))
         elif keys[pygame.K_s]:
             self.direction.y = min(MAX_SPEED, self.direction.y + formula(*self.direction))
+        else:
+            self.direction.y *= 0.7
 
         if keys[pygame.K_a]:
             self.direction.x = max(-MAX_SPEED, self.direction.x - formula(*self.direction))
         elif keys[pygame.K_d]:
             self.direction.x = min(MAX_SPEED, self.direction.x + formula(*self.direction))
+        else:
+            self.direction.x *= 0.7
 
     def update(self):
         self.input()
@@ -85,24 +89,26 @@ class Game:
 
         self.thread = MovingThread(self.camera)
         self.thread.start()
+        weap = weapon.BulletAmount()
+
         clock = pygame.time.Clock()
         running = True
 
         while running:
+            self.camera.draw(self.textures, self.screen)
+
+            clock.tick(FPS)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.display.quit()
                     running = False
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
-                        self.screen.blit(weapon.bullet(), (10, 10))
+                        self.screen.blit(weap.get_bullet(), (100, 100))
                 elif event.type == pygame.MOUSEMOTION:
                     self.player.set_angle(self.check_angle(event.pos))
 
-            self.camera.draw(self.textures, self.screen)
             pygame.display.update()
-
-            clock.tick(FPS)
 
     def check_angle(self, mouse_pos):
         quarters = {(True, False): 0, (False, False): 1, (False, True): 2, (True, True): 3}
