@@ -4,7 +4,7 @@ from texture import Texture
 import weapon
 import pygame
 
-MAX_SPEED = 10
+MAX_SPEED = 7
 BACKGROUND_COLOR = '#71ddee'
 WIDTH, HEIGHT = 1280, 720
 FPS = 60
@@ -30,7 +30,6 @@ class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для гр�
         Texture.__init__(self, blit_pos, 'player.png')
 
         self.direction = pygame.math.Vector2()
-        self.velocity = pygame.math.Vector2()
 
     def input(self):    # тут я ещё не доделал
         def formula(x, y):
@@ -44,9 +43,9 @@ class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для гр�
         if keys[pygame.K_w]:
             self.direction.y -= adjust
         elif keys[pygame.K_s]:
-            self.direction.y += adjust
+            self.direction.y = min(MAX_SPEED, self.direction.y + formula(*self.direction))
         else:
-            pass
+            self.direction.y *= 0.7
 
         # if at_max_speed:
         #     if self.direction.x > 0:
@@ -61,7 +60,7 @@ class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для гр�
         elif keys[pygame.K_d]:
             self.direction.x += adjust
         else:
-            pass
+            self.direction.x *= 0.7
 
         # if at_max_speed:
         #     if self.direction.y > 0:
@@ -111,6 +110,10 @@ class Game:
 
         self.thread = MovingThread(self.camera)     # обработку игрока вынесена в отдельный поток
         self.thread.start()     # запускаем поток
+        self.thread = MovingThread(self.camera)
+        self.thread.start()
+        weap = weapon.BulletAmount()
+
         clock = pygame.time.Clock()
         running = True
 
@@ -121,7 +124,7 @@ class Game:
                     running = False
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
-                        self.screen.blit(weapon.bullet(), (10, 10))
+                        self.screen.blit(weap.get_bullet(), (100, 100))
                 elif event.type == pygame.MOUSEMOTION:
                     self.player.set_angle(self.check_angle(event.pos))
 
