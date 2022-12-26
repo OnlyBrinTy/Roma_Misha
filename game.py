@@ -4,7 +4,7 @@ from texture import Texture
 import weapon
 import pygame
 
-MAX_SPEED = 7
+MAX_SPEED = 10
 BACKGROUND_COLOR = '#71ddee'
 WIDTH, HEIGHT = 1280, 720
 FPS = 60
@@ -30,22 +30,46 @@ class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для гр�
         Texture.__init__(self, blit_pos, 'player.png')
 
         self.direction = pygame.math.Vector2()
+        self.velocity = pygame.math.Vector2()
 
-    def input(self):
+    def input(self):    # тут я ещё не доделал
         def formula(x, y):
             return max(0.1, (abs(x) + abs(y)) ** 0.125)
 
+        adjust = formula(*self.direction)
         keys = pygame.key.get_pressed()
 
+        at_max_speed = abs(self.direction.x) + abs(self.direction.y) >= MAX_SPEED
+
         if keys[pygame.K_w]:
-            self.direction.y = max(-MAX_SPEED, self.direction.y - formula(*self.direction))
+            self.direction.y -= adjust
         elif keys[pygame.K_s]:
-            self.direction.y = min(MAX_SPEED, self.direction.y + formula(*self.direction))
+            self.direction.y += adjust
+        else:
+            pass
+
+        # if at_max_speed:
+        #     if self.direction.x > 0:
+        #         self.direction.x -= adjust
+        #     elif not -adjust <= self.direction.x >= adjust:
+        #         self.direction.x += adjust
+        #     else:
+        #         self.direction.y = max(-MAX_SPEED, min(MAX_SPEED, self.direction.y))
 
         if keys[pygame.K_a]:
-            self.direction.x = max(-MAX_SPEED, self.direction.x - formula(*self.direction))
+            self.direction.x -= adjust
         elif keys[pygame.K_d]:
-            self.direction.x = min(MAX_SPEED, self.direction.x + formula(*self.direction))
+            self.direction.x += adjust
+        else:
+            pass
+
+        # if at_max_speed:
+        #     if self.direction.y > 0:
+        #         self.direction.y -= adjust
+        #     elif not -adjust <= self.direction.y >= adjust:
+        #         self.direction.y += adjust
+        #     else:
+        #         self.direction.x = max(-MAX_SPEED, min(MAX_SPEED, self.direction.x))
 
     def update(self):
         self.input()
@@ -57,16 +81,16 @@ class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для гр�
 class Camera(pygame.sprite.GroupSingle):
     offset = pygame.math.Vector2()
 
-    def camera_centering(self):
+    def camera_centering(self):     # установка сдвига камеры так, чтобы игрок оказался по центру
         self.offset.x = self.sprite.rect.center[0] - WIDTH // 2
         self.offset.y = self.sprite.rect.center[1] - HEIGHT // 2
 
     def draw(self, textures, screen):
         self.camera_centering()
 
-        screen.fill(BACKGROUND_COLOR)
+        screen.fill(BACKGROUND_COLOR)   # заливка фона
 
-        for texture in textures:
+        for texture in textures:     # каждая текстура выводятся на экран друг за другом с учётом сдвига камеры
             display_position = texture.blit_pos - self.offset
             screen.blit(texture.image, display_position)
 
@@ -79,12 +103,14 @@ class Game:
 
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), vsync=True)
 
-        self.camera = Camera()
+        self.camera = Camera()  # через камеру происходит отображение всего на экране
         self.player = Player((WIDTH // 2, HEIGHT // 2), self.camera)
-        self.textures = [Texture((0, 0), 'ground.png'), self.player]
+        self.textures = [Texture((0, 0), 'ground.webp'), self.player]
+        # в textures лежат текстуры, которые будут затем выводится на экран
+        # они лежат в порядке отображения. Сначала рисуем землю и поверх неё рисуем игрока
 
-        self.thread = MovingThread(self.camera)
-        self.thread.start()
+        self.thread = MovingThread(self.camera)     # обработку игрока вынесена в отдельный поток
+        self.thread.start()     # запускаем поток
         clock = pygame.time.Clock()
         running = True
 
@@ -104,7 +130,7 @@ class Game:
 
             clock.tick(FPS)
 
-    def check_angle(self, mouse_pos):
+    def check_angle(self, mouse_pos):   # определение угла поворота в зависимости от положение мыши
         quarters = {(True, False): 0, (False, False): 1, (False, True): 2, (True, True): 3}
 
         x_dist, y_dist = mouse_pos - pygame.Vector2(self.player.rect.center - self.camera.offset)
