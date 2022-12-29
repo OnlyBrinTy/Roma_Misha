@@ -3,13 +3,13 @@ import pygame
 
 
 class Texture:
-    def __init__(self, blit_pos, img_source):
+    def __init__(self, blit_pos, image):
         # есть _original_image - это вид картинки по умолчанию(без наклона).
         # Нужна на случай, если картинка крутится
         # image это конечный вариант картинки. Возможно с разворотом
-        self._original_image = self.image = pygame.image.load(f'assets/{img_source}').convert_alpha()
+        self._original_image = self.image = image
         # вместо встроенного в pygame rect я использую свой аналог.
-        # Он отличается тем, что он поддерживает дробные числа в координанатах.
+        # Он отличается тем, что он поддерживает дробные числа в координатах.
         self.rect = Rect(self.image, topleft=blit_pos)
         self.blit_pos = blit_pos    # координаты для отрисовки в Camera.
 

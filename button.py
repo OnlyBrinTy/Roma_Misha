@@ -1,5 +1,4 @@
 import pygame
-
 pygame.init()
 
 text_color = (247, 239, 174)

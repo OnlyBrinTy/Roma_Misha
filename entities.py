@@ -5,40 +5,10 @@ import pygame
 MAX_SPEED = 10
 
 
-class AnotherThread(Thread):
-    def __init__(self, *groups_to_update):
-        super().__init__()
-
-        self.groups_to_update = groups_to_update
-        self.update_groups = Event()
-
-    def run(self):
-        while True:
-            if self.update_groups.is_set():
-                for group in self.groups_to_update:
-                    group.update()
-
-                self.update_groups.clear()
-
-
-class Vectors:
-    direction = pygame.Vector2()
-
-    @property
-    def velocity(self):
-        return pygame.Vector2(abs(self.direction.x), abs(self.direction.y))
-
-    @velocity.setter
-    def velocity(self, value):
-        direction_mask = pygame.Vector2(*map(lambda x: bool(x >= 0) * 2 - 1, self.direction))
-
-        self.direction = direction_mask.elementwise() * value
-
-
-class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для группы  camera
-    def __init__(self, blit_pos, group):
-        pygame.sprite.Sprite.__init__(self, group)
-        Texture.__init__(self, blit_pos, 'player.png')
+class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для групп camera и entities
+    def __init__(self, blit_pos, groups):
+        pygame.sprite.Sprite.__init__(self, *groups)
+        Texture.__init__(self, blit_pos, pygame.image.load('assets/player.png'))
 
         self.vectors = Vectors()
 
@@ -75,3 +45,33 @@ class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для гр�
 
         self.rect.center += self.vectors.direction
         self.blit_pos += self.vectors.direction
+
+
+class AnotherThread(Thread):
+    def __init__(self, *groups_to_update):
+        super().__init__()
+
+        self.groups_to_update = groups_to_update
+        self.update_groups = Event()
+
+    def run(self):
+        while True:
+            if self.update_groups.is_set():
+                for group in self.groups_to_update:
+                    group.update()
+
+                self.update_groups.clear()
+
+
+class Vectors:
+    direction = pygame.Vector2()
+
+    @property
+    def velocity(self):
+        return pygame.Vector2(*map(abs, self.direction))
+
+    @velocity.setter
+    def velocity(self, value):
+        direction_mask = pygame.Vector2(*map(lambda x: bool(x >= 0) * 2 - 1, self.direction))
+
+        self.direction = direction_mask.elementwise() * value

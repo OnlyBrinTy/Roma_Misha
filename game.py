@@ -1,45 +1,13 @@
-from actor import AnotherThread, Player
+from entities import AnotherThread, Player
 from math import atan, degrees
 from texture import Texture
+from map import Map
 import weapon
 import pygame
 
 BACKGROUND_COLOR = '#71ddee'
 WIDTH, HEIGHT = 1280, 720
 FPS = 120
-maps_directory = 'maps'
-sprite_size = 64
-
-
-class Map:  # Класс для создания карт
-    def __init__(self, filename, free_sprites, checkpoint):
-        # принимает на вход имя файла
-        # список спрайтов, по которым можно ходить
-        # а так же чекпоинт, до которог нужно дойти
-        self.map = []  # создание карты
-
-        with open(f'{maps_directory}/{filename}') as map_file:  # открываем файл с картой
-            for line in map_file:
-                self.map.append(list(map(int, line.split())))  # записываем данные из файла в список
-
-        self.map_height = len(self.map)  # высота карты
-        self.map_width = len(self.map[0])  # ширина карты
-        self.sprite_size = sprite_size  # размер 1 клетки
-        self.free_sprites = free_sprites  # свобоные клетки
-        self.checkpoint = checkpoint  # чекпоинт
-
-    def map_render(self, screen):  # рендер карты для отображения на экране
-        sprites = {}  # тут должен быть словарь спрайтов, но их пока нет, поэтому словарь пуст
-        for y in range(self.map_height):  # проходимся циклом по карте
-            for x in range(self.map_width):
-                sprite = None  # получаем значение спрайта из словаря
-                screen.blit()  # отображаем наш спрайт на экране
-
-    def get_sprite_id(self, sprite_position):  # возвращает id спрайта
-        return self.map[sprite_position[1]][sprite_position[0]]
-
-    def if_sprite_free(self, sprite_position):  # проверяет, можно ли ходить по этому спрайту
-        return self.get_sprite_id(sprite_position) in self.free_sprites
 
 
 class Camera(pygame.sprite.GroupSingle):
@@ -49,14 +17,17 @@ class Camera(pygame.sprite.GroupSingle):
         self.offset.x = self.sprite.rect.center[0] - WIDTH // 2
         self.offset.y = self.sprite.rect.center[1] - HEIGHT // 2
 
-    def draw(self, textures, screen):
+    def draw(self, groups, interface, screen):
         self.camera_centering()
 
         screen.fill(BACKGROUND_COLOR)   # заливка фона
 
-        for texture in textures:  # каждая текстура выводятся на экран друг за другом с учётом сдвига камеры
-            display_position = texture.blit_pos - self.offset
-            screen.blit(texture.image, display_position)
+        for group in groups:
+            for sprite in group.sprites():
+                screen.blit(sprite.image, sprite.blit_pos - self.offset)
+
+        for texture in interface:  # каждая текстура выводится на экран друг за другом с учётом сдвига камеры
+            screen.blit(texture.image, texture.blit_pos)
 
         pygame.display.update()
 
@@ -68,13 +39,17 @@ class Game:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), vsync=True)
 
         self.camera = Camera()  # через камеру происходит отображение всего на экране
-        self.player = Player((WIDTH // 2, HEIGHT // 2), self.camera)
-        self.textures = [Texture((0, 0), 'ground.png'), self.player]
-        # в textures лежат текстуры, которые будут затем выводится на экран
+        self.entities = pygame.sprite.Group()
+        self.map = Map('test_level.txt')
+
+        self.player = Player((WIDTH // 2, HEIGHT // 2), (self.camera, self.entities))
+        self.interface = []
+        # в interface лежат текстуры, которые будут затем выводится на экран
         # они лежат в порядке отображения. Сначала рисуем землю и поверх неё рисуем игрока
 
         self.thread = AnotherThread(self.camera)
         self.thread.start()
+
         weap = weapon.BulletAmount()
 
         clock = pygame.time.Clock()
@@ -96,7 +71,7 @@ class Game:
             while self.thread.update_groups.is_set():    # ждём пока персонаж не обработает своё положение
                 pass
 
-            self.camera.draw(self.textures, self.screen)
+            self.camera.draw((self.map, self.entities), self.interface, self.screen)
             pygame.display.update()
 
             clock.tick(FPS)
