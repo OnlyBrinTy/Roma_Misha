@@ -26,21 +26,16 @@ class Map(pygame.sprite.Group):  # Класс для создания карт
         self.map = []  # создание карты
 
         with open(f'{MAPS_DIRECTORY}/{filename}') as map_file:  # открываем файл с картой
-            for x, line in enumerate(map_file):
+            for y, line in enumerate(map_file):
                 row = []
-                for y, num in enumerate(line.replace('\n', '')):
-                    row.append(Block(self, num, (x * CELL_SIZE, y * CELL_SIZE)))    # записываем данные из файла в список
+                for x, kind in enumerate(line.replace('\n', '')):
+                    if kind != ' ':
+                        row.append(Block(self, kind, (x * CELL_SIZE, y * CELL_SIZE)))    # записываем данные из файла в список
 
                 self.map.append(row)
 
         self.map_height = len(self.map)  # высота карты
         self.map_width = len(self.map[0])  # ширина карты
-
-    # def map_render(self, screen):  # рендер карты для отображения на экране
-    #     for y in range(self.map_height):  # проходимся циклом по карте
-    #         for x in range(self.map_width):
-    #             sprite = None  # получаем значение спрайта из словаря
-    #             screen.blit()  # отображаем наш спрайт на экране
 
     def get_sprite_id(self, sprite_position):  # возвращает id спрайта
         return self.map[sprite_position[1]][sprite_position[0]]
