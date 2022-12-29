@@ -7,6 +7,39 @@ import pygame
 BACKGROUND_COLOR = '#71ddee'
 WIDTH, HEIGHT = 1280, 720
 FPS = 120
+maps_directory = 'maps'
+sprite_size = 64
+
+
+class Map:  # Класс для создания карт
+    def __init__(self, filename, free_sprites, checkpoint):
+        # принимает на вход имя файла
+        # список спрайтов, по которым можно ходить
+        # а так же чекпоинт, до которог нужно дойти
+        self.map = []  # создание карты
+
+        with open(f'{maps_directory}/{filename}') as map_file:  # открываем файл с картой
+            for line in map_file:
+                self.map.append(list(map(int, line.split())))  # записываем данные из файла в список
+
+        self.map_height = len(self.map)  # высота карты
+        self.map_width = len(self.map[0])  # ширина карты
+        self.sprite_size = sprite_size  # размер 1 клетки
+        self.free_sprites = free_sprites  # свобоные клетки
+        self.checkpoint = checkpoint  # чекпоинт
+
+    def map_render(self, screen):  # рендер карты для отображения на экране
+        sprites = {}  # тут должен быть словарь спрайтов, но их пока нет, поэтому словарь пуст
+        for y in range(self.map_height):  # проходимся циклом по карте
+            for x in range(self.map_width):
+                sprite = None  # получаем значение спрайта из словаря
+                screen.blit()  # отображаем наш спрайт на экране
+
+    def get_sprite_id(self, sprite_position):  # возвращает id спрайта
+        return self.map[sprite_position[1]][sprite_position[0]]
+
+    def if_sprite_free(self, sprite_position):  # проверяет, можно ли ходить по этому спрайту
+        return self.get_sprite_id(sprite_position) in self.free_sprites
 
 
 class Camera(pygame.sprite.GroupSingle):
