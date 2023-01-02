@@ -1,5 +1,6 @@
 from threading import Thread, Event
 from texture import Texture
+from time import time
 import pygame
 
 MAX_SPEED = 10
@@ -12,14 +13,19 @@ class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для гр�
 
         self.vectors = Vectors()
 
-    def motion(self):
-        def formula(speed):
-            return 2 / 1.15 ** speed
+    def motion(self, slowdown):
+        def formula(speed, depth):
+            curr_increase = 2 / 1.15 ** speed
+
+            if depth:
+                return curr_increase + formula(speed + curr_increase, depth - 1)
+
+            return curr_increase * (slowdown % 1)
 
         keys = pygame.key.get_pressed()
         w, a, s, d = keys[pygame.K_w], keys[pygame.K_a], keys[pygame.K_s], keys[pygame.K_d]
 
-        boost = formula(sum(self.vectors.velocity))
+        boost = formula(sum(self.vectors.velocity), int(slowdown))
 
         self.vectors.direction += boost * (bool(d) - bool(a)), boost * (bool(s) - bool(w))
 
@@ -40,11 +46,15 @@ class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для гр�
             else:
                 self.vectors.velocity -= overload * bool(w == s), overload * bool(a == d)
 
-    def update(self):
-        self.motion()
+    def update(self, delay):
+        slowdown = delay / 0.035
+        self.motion(slowdown)
 
-        self.rect.center += self.vectors.direction
-        self.blit_pos += self.vectors.direction
+        print(self.vectors.velocity, slowdown)
+
+        real_direction = self.vectors.direction * slowdown
+        self.rect.center += real_direction
+        self.blit_pos += real_direction
 
 
 class AnotherThread(Thread):
@@ -55,10 +65,15 @@ class AnotherThread(Thread):
         self.update_groups = Event()
 
     def run(self):
+        start = time()
+
         while True:
             if self.update_groups.is_set():
+                delay = time() - start
+                start = time()
+
                 for group in self.groups_to_update:
-                    group.update()
+                    group.update(delay)
 
                 self.update_groups.clear()
 
