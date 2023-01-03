@@ -6,12 +6,24 @@ import pygame
 MAX_SPEED = 10
 
 
-class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для групп camera и entities
-    def __init__(self, blit_pos, groups):
+class Entities(pygame.sprite.Sprite, Texture):
+    def __init__(self, blit_pos, file_name, groups):
         pygame.sprite.Sprite.__init__(self, *groups)
-        Texture.__init__(self, blit_pos, pygame.image.load('assets/player.png'))
+        Texture.__init__(self, blit_pos, pygame.image.load(file_name))
 
+    def update(self, delay):
+        slowdown = delay / 0.025
+        self.motion(slowdown)
+
+        real_direction = self.vectors.direction * slowdown
+        self.rect.center += real_direction
+        self.blit_pos += real_direction
+
+
+class Player(Entities):  # Это спрайт для групп camera и entities
+    def __init__(self, blit_pos, file_name, groups):
         self.vectors = Vectors()
+        Entities.__init__(self, blit_pos, file_name, groups)
 
     def motion(self, slowdown):
         def formula(speed, depth):
@@ -45,14 +57,6 @@ class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для гр�
                 self.vectors.velocity -= self.vectors.velocity / sum(self.vectors.velocity) * overload
             else:
                 self.vectors.velocity -= overload * bool(w == s), overload * bool(a == d)
-
-    def update(self, delay):
-        slowdown = delay / 0.035
-        self.motion(slowdown)
-
-        real_direction = self.vectors.direction * slowdown
-        self.rect.center += real_direction
-        self.blit_pos += real_direction
 
 
 class AnotherThread(Thread):
