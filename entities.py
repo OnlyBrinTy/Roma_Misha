@@ -7,10 +7,10 @@ import pygame
 MAX_SPEED = 10
 
 
-class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для групп camera и entities
-    def __init__(self, blit_pos, groups):
+class Entity(pygame.sprite.Sprite, Texture):
+    def __init__(self, blit_pos, file_name, groups):
         pygame.sprite.Sprite.__init__(self, *groups)
-        Texture.__init__(self, blit_pos, pygame.image.load('assets/player.png'))
+        Texture.__init__(self, blit_pos, pygame.image.load(file_name))
 
         self.vectors = Vectors()
         # Так как персонаж по умолчанию крутится очень странно,
@@ -23,6 +23,24 @@ class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для гр�
         # Он отличается тем, что он поддерживает дробные числа в координатах.
         self.add_rect = Rect(self.rect)
         self.mask = pygame.mask.from_surface(self.image)
+
+    def update(self, delay, group):
+        slowdown = delay / 0.035
+        self.motion(slowdown)
+
+        real_direction = self.vectors.direction * slowdown
+        self.add_rect.topleft += real_direction
+        self.rect.topleft = self.add_rect.topleft + self.rect_correction
+
+        for sprite in group.sprites():
+            if sprite.kind == 1 and pygame.sprite.collide_mask(self, sprite):
+                self.vectors.velocity = 0, 0
+
+
+class Player(Entity):  # Это спрайт для групп camera и entities
+    def __init__(self, blit_pos, file_name, groups):
+        self.vectors = Vectors()
+        Entity.__init__(self, blit_pos, file_name, groups)
 
     def motion(self, slowdown):
         def formula(speed, depth):
@@ -56,30 +74,6 @@ class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для гр�
                 self.vectors.velocity -= self.vectors.velocity / sum(self.vectors.velocity) * overload
             else:
                 self.vectors.velocity -= overload * bool(w == s), overload * bool(a == d)
-
-    def update(self, delay, group):
-        slowdown = delay / 0.035
-        self.motion(slowdown)
-
-        real_direction = self.vectors.direction * slowdown
-        self.add_rect.topleft += real_direction
-        self.rect.topleft = self.add_rect.topleft + self.rect_correction
-
-        for sprite in group.sprites():
-            if sprite.kind == 1 and pygame.sprite.collide_mask(self, sprite):
-                self.vectors.velocity = 0, 0
-
-    def set_angle(self, angle):
-        self.image = pygame.transform.rotate(self._original_image, angle)
-        self.mask = pygame.mask.from_surface(self.image)
-
-        img_half_w = self.image.get_width() / 2
-        img_half_h = self.image.get_height() / 2
-        rect_half_w = self.rect.width / 2
-        rect_half_h = self.rect.height / 2
-
-        self.rect_correction.update(rect_half_w - img_half_w, rect_half_h - img_half_h)
-        self.rect.topleft = self.add_rect.topleft + self.rect_correction
 
 
 class AnotherThread(Thread):
