@@ -11,6 +11,9 @@ class Block(pygame.sprite.Sprite, Texture):
         pygame.sprite.Sprite.__init__(self, group)
         Texture.__init__(self, position, pygame.image.load(f'assets/wall_{kind}.png'))
 
+        self.kind = int(kind)
+        self.mask = pygame.mask.from_surface(self.image)
+
     def draw(self, surface):
         surface.blit(self.image, self.rect)
 

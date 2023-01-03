@@ -1,6 +1,5 @@
 from entities import AnotherThread, Player
 from math import atan, degrees
-from texture import Texture
 from map import Map
 import weapon
 import pygame
@@ -14,20 +13,32 @@ class Camera(pygame.sprite.GroupSingle):
     offset = pygame.math.Vector2()
 
     def camera_centering(self):   # установка сдвига камеры так, чтобы игрок оказался по центру
-        self.offset.x = self.sprite.rect.center[0] - WIDTH // 2
-        self.offset.y = self.sprite.rect.center[1] - HEIGHT // 2
+        self.offset.x = self.sprite.add_rect.center[0] - WIDTH // 2
+        self.offset.y = self.sprite.add_rect.center[1] - HEIGHT // 2
 
     def draw(self, groups, interface, screen):
         self.camera_centering()
 
         screen.fill(BACKGROUND_COLOR)   # заливка фона
+        i = 0
+        for group in groups:   # каждый спрайт выводится на экран друг за другом с учётом сдвига камеры
+            if i:
+                for sprite in group.sprites():
+                    if sprite.rect.topleft != tuple(map(int, sprite.add_rect.topleft + sprite.rect_correction)):
+                        print(sprite.rect.topleft, tuple(map(int, sprite.add_rect.topleft + sprite.rect_correction)))
 
-        for group in groups:
-            for sprite in group.sprites():
-                screen.blit(sprite.image, sprite.blit_pos - self.offset)
+                    screen.blit(sprite.image, sprite.rect.topleft - self.offset)
+            else:
+                for sprite in group.sprites():
+                    screen.blit(sprite.image, sprite.rect.topleft - self.offset)
 
-        for texture in interface:  # каждая текстура выводится на экран друг за другом с учётом сдвига камеры
+            i += 1
+
+        for texture in interface:
             screen.blit(texture.image, texture.blit_pos)
+
+        olist = self.sprite.mask.outline()
+        pygame.draw.lines(screen, (200, 150, 150), 1, olist)
 
         pygame.display.update()
 
@@ -47,7 +58,7 @@ class Game:
         # в interface лежат текстуры, которые будут затем выводится на экран
         # они лежат в порядке отображения. Сначала рисуем землю и поверх неё рисуем игрока
 
-        self.thread = AnotherThread(self.camera)
+        self.thread = AnotherThread(self.map, self.camera)
         self.thread.start()
 
         weap = weapon.BulletAmount()
@@ -60,7 +71,8 @@ class Game:
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    pygame.display.quit()
+                    pygame.quit()
+                    self.thread.terminated.set()
                     running = False
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
@@ -68,18 +80,17 @@ class Game:
                 elif event.type == pygame.MOUSEMOTION:
                     self.player.set_angle(self.check_angle(event.pos))
 
-            while self.thread.update_groups.is_set():    # ждём пока персонаж не обработает своё положение
+            while self.thread.update_groups.is_set():  # ждём пока персонаж не обработает своё положение
                 pass
 
             self.camera.draw((self.map, self.entities), self.interface, self.screen)
-            pygame.display.update()
 
             clock.tick(FPS)
 
-    def check_angle(self, mouse_pos):   # определение угла поворота в зависимости от положение мыши
+    def check_angle(self, mouse_pos):   # определение угла поворота в зависимости от положения мыши
         quarters = {(True, False): 0, (False, False): 1, (False, True): 2, (True, True): 3}
 
-        x_dist, y_dist = mouse_pos - pygame.Vector2(self.player.rect.center - self.camera.offset)
+        x_dist, y_dist = mouse_pos - pygame.Vector2(self.player.add_rect.center - self.camera.offset)
         quart_num = quarters[(x_dist > 0, y_dist > 0)]
 
         if x_dist == 0 or y_dist == 0:

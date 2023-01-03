@@ -1,5 +1,6 @@
 from threading import Thread, Event
 from texture import Texture
+from rectangle import Rect
 from time import time
 import pygame
 
@@ -12,6 +13,16 @@ class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для гр�
         Texture.__init__(self, blit_pos, pygame.image.load('assets/player.png'))
 
         self.vectors = Vectors()
+        # Так как персонаж по умолчанию крутится очень странно,
+        # чтобы скомпенсировать его странное вращение в нормальное используется отдельный вектор
+        self.rect_correction = pygame.Vector2()
+        # есть _original_image - это вид картинки по умолчанию(без наклона).
+        # Нужна на случай, если картинка крутится
+        self._original_image = self.image
+        # вместо встроенного в pygame rect я использую свой аналог.
+        # Он отличается тем, что он поддерживает дробные числа в координатах.
+        self.add_rect = Rect(self.rect)
+        self.mask = pygame.mask.from_surface(self.image)
 
     def motion(self, slowdown):
         def formula(speed, depth):
@@ -46,32 +57,50 @@ class Player(pygame.sprite.Sprite, Texture):  # Это спрайт для гр�
             else:
                 self.vectors.velocity -= overload * bool(w == s), overload * bool(a == d)
 
-    def update(self, delay):
+    def update(self, delay, group):
         slowdown = delay / 0.035
         self.motion(slowdown)
 
         real_direction = self.vectors.direction * slowdown
-        self.rect.center += real_direction
-        self.blit_pos += real_direction
+        self.add_rect.topleft += real_direction
+        self.rect.topleft = self.add_rect.topleft + self.rect_correction
+
+        for sprite in group.sprites():
+            if sprite.kind == 1 and pygame.sprite.collide_mask(self, sprite):
+                self.vectors.velocity = 0, 0
+
+    def set_angle(self, angle):
+        self.image = pygame.transform.rotate(self._original_image, angle)
+        self.mask = pygame.mask.from_surface(self.image)
+
+        img_half_w = self.image.get_width() / 2
+        img_half_h = self.image.get_height() / 2
+        rect_half_w = self.rect.width / 2
+        rect_half_h = self.rect.height / 2
+
+        self.rect_correction.update(rect_half_w - img_half_w, rect_half_h - img_half_h)
+        self.rect.topleft = self.add_rect.topleft + self.rect_correction
 
 
 class AnotherThread(Thread):
-    def __init__(self, *groups_to_update):
+    def __init__(self, group, *groups_to_update):
         super().__init__()
 
         self.groups_to_update = groups_to_update
         self.update_groups = Event()
+        self.terminated = Event()
+        self.collide_group = group
 
     def run(self):
         start = time()
 
-        while True:
+        while not self.terminated.is_set():
             if self.update_groups.is_set():
                 delay = time() - start
                 start = time()
 
                 for group in self.groups_to_update:
-                    group.update(delay)
+                    group.update(delay, self.collide_group)
 
                 self.update_groups.clear()
 
