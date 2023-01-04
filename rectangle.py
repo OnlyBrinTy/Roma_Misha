@@ -10,14 +10,12 @@ class AddList(list):
 
 
 class Rect:
-    def __init__(self, image, **kwargs):
-        self._rect = image.get_rect(**kwargs)
-
-        self.width = self._rect.width
-        self.height = self._rect.height
+    def __init__(self, rect):
+        self.width = rect.width
+        self.height = rect.height
         self.h_width = self.width / 2
         self.h_height = self.height / 2
-        self.x, self.y = self._rect.topleft
+        self.x, self.y = rect.topleft
 
     @property
     def topleft(self):
