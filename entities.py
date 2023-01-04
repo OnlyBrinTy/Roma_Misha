@@ -8,9 +8,9 @@ MAX_SPEED = 10
 
 
 class Entity(pygame.sprite.Sprite, Texture):
-    def __init__(self, blit_pos, file_name, groups):
+    def __init__(self, start_pos, file_name, groups):
         pygame.sprite.Sprite.__init__(self, *groups)
-        Texture.__init__(self, blit_pos, pygame.image.load(file_name))
+        Texture.__init__(self, start_pos, pygame.image.load(file_name))
 
         self.vectors = Vectors()
         # Так как персонаж по умолчанию крутится очень странно,
@@ -24,23 +24,66 @@ class Entity(pygame.sprite.Sprite, Texture):
         self.add_rect = Rect(self.rect)
         self.mask = pygame.mask.from_surface(self.image)
 
-    def update(self, delay, group):
-        slowdown = delay / 0.035
-        self.motion(slowdown)
+        self.half_w = self.rect.width / 2
+        self.half_h = self.rect.height / 2
 
+    def set_angle(self, angle):
+        self.image = pygame.transform.rotate(self._original_image, angle)   # поворот картинки
+        self.mask = pygame.mask.from_surface(self.image)    # меняем маску
+        self.rect.size = self.image.get_size()  # меняем rect.size на новый
+
+        img_half_w = self.image.get_width() / 2
+        img_half_h = self.image.get_height() / 2
+
+        self.rect_correction.update(self.half_w - img_half_w, self.half_h - img_half_h)
+        self.rect.topleft = self.add_rect.topleft + self.rect_correction    # устанавливаем правильный  topleft
+
+    def update(self, delay, group):
+        slowdown = delay / 0.035    # отклонение от стандартного течения времени (1 кадр в 0.035 секунды)
+        self.motion(slowdown)   # обрабатываем физику и нажатия (если есть)
+
+        # для компенсации слишком редкого/частого обновления персонажа
+        # скорость умножается на коэффициент замедления времени
         real_direction = self.vectors.direction * slowdown
+        #   add_rect отображает положение игрока в пространстве без учёта кручения в дробных числах и не меняет размер
         self.add_rect.topleft += real_direction
+        #   обычный rect нужен для отображения картинки, его размеры зависят от разворота картинки,
+        #   а topleft всегда изменяется в зависимости от разворота картинки (чтобы не болтало, как это было раньше)
         self.rect.topleft = self.add_rect.topleft + self.rect_correction
 
         for sprite in group.sprites():
-            if sprite.kind == 1 and pygame.sprite.collide_mask(self, sprite):
-                self.vectors.velocity = 0, 0
+            if sprite.kind == 1 and pygame.sprite.collide_mask(self, sprite):   # если столкнулись с красным блоком
+                pass
+                # следующие комменты можешь удалить
+
+                # self.collision[0] = sprite.rect.collidepoint(self.rect.topleft)
+                # self.collision[1] = sprite.rect.collidepoint(self.rect.topright)
+                # self.collision[2] = sprite.rect.collidepoint(self.rect.bottomleft)
+                # self.collision[3] = sprite.rect.collidepoint(self.rect.bottomright)
+                #
+                # self.collision[4] = sprite.rect.collidepoint(self.rect.midleft)
+                # self.collision[5] = sprite.rect.collidepoint(self.rect.midright)
+                # self.collision[6] = sprite.rect.collidepoint(self.rect.midtop)
+                # self.collision[7] = sprite.rect.collidepoint(self.rect.midbottom)
+
+                # x, y = self.rect.center - pygame.Vector2(sprite.rect.center)
+                #
+                # if abs(x) > abs(y):
+                #     if x > 0:
+                #         print('справа')
+                #     else:
+                #         print('слева')
+                # else:
+                #     if y > 0:
+                #         print('снизу')
+                #     else:
+                #         print('сверху')
 
 
 class Player(Entity):  # Это спрайт для групп camera и entities
-    def __init__(self, blit_pos, file_name, groups):
+    def __init__(self, start_pos, file_name, groups):
         self.vectors = Vectors()
-        Entity.__init__(self, blit_pos, file_name, groups)
+        Entity.__init__(self, start_pos, file_name, groups)
 
     def motion(self, slowdown):
         def formula(speed, depth):
@@ -76,30 +119,30 @@ class Player(Entity):  # Это спрайт для групп camera и entitie
                 self.vectors.velocity -= overload * bool(w == s), overload * bool(a == d)
 
 
-class AnotherThread(Thread):
+class AnotherThread(Thread):    # обработка сущностей вынесена в отдельный поток
     def __init__(self, group, *groups_to_update):
         super().__init__()
 
-        self.groups_to_update = groups_to_update
-        self.update_groups = Event()
-        self.terminated = Event()
-        self.collide_group = group
+        self.groups_to_update = groups_to_update    # группы, которые будем обновлять (возможно не только entities)
+        self.update_groups = Event()    # флажок означающий, что надо обновить группы
+        self.terminated = Event()   # флажок означающий, жив или мёртв этот поток (так можно убить извне)
+        self.collide_group = group  # група со спрайтами, с которыми будет происходить столкновение
 
     def run(self):
         start = time()
 
         while not self.terminated.is_set():
             if self.update_groups.is_set():
-                delay = time() - start
+                delay = time() - start  # считаем задержку между запросами на обновление
                 start = time()
 
                 for group in self.groups_to_update:
                     group.update(delay, self.collide_group)
 
-                self.update_groups.clear()
+                self.update_groups.clear()  # ставим флажок обновления на False
 
 
-class Vectors:
+class Vectors:  # содержит direction (пример [5.5, -4.5]) и его аналог velocity, но под модулем (пример [5.5, 4.5])
     direction = pygame.Vector2()
 
     @property

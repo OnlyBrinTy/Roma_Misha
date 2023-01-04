@@ -9,7 +9,7 @@ class AddList(list):
         return self
 
 
-class Rect:
+class Rect:  # то же что и pygame.rect только с дробными числами
     def __init__(self, rect):
         self.width = rect.width
         self.height = rect.height
