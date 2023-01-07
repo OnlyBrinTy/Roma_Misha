@@ -1,0 +1,3 @@
+test_level.txt
+rewardsффффф
+10
