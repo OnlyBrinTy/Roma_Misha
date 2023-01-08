@@ -46,16 +46,18 @@ class Camera(pygame.sprite.GroupSingle):
         # pygame.draw.rect(screen, 'purple', (*self.sprite.rect.topleft - self.offset, *self.sprite.rect.size), 1)
         # pygame.draw.rect(screen, 'green', (0, 0, *self.sprite.rect.size), 1)
         #
-        # for sprite in groups[0].sprites():
-        #     if sprite.kind == 1 and pygame.sprite.collide_mask(self.sprite, sprite):
-        #         # colpoint = self.sprite.mask.overlap(sprite.mask, (-10, -10))
-        #         x, y = sprite.rect.topleft - pygame.Vector2(self.sprite.rect.topleft)
-        #         # if type(colpoint) is tuple:
-        #             # pygame.draw.rect(screen, 'blue', (*colpoint, x, y))
-        #
-        #         colmask = self.sprite.mask.overlap_mask(sprite.mask, (x, y))
-        #         screen.blit(colmask.to_surface(), (200, 0))
+        i = 0
+        for sprite in groups[0].sprites():
+            if sprite.kind == 1 and pygame.sprite.collide_mask(self.sprite, sprite):
+                i += 1
+                # colpoint = self.sprite.mask.overlap(sprite.mask, (-10, -10))
+                x, y = pygame.Vector2(self.sprite.rect.topleft) - sprite.rect.topleft
+                # if type(colpoint) is tuple:
+                    # pygame.draw.rect(screen, 'blue', (*colpoint, x, y))
 
+                colmask = sprite.mask.overlap_mask(self.sprite.mask, (x, y))
+                screen.blit(colmask.to_surface(), (i * 50, 0))
+        #
         # olist = self.sprite.mask.outline()
         # pygame.draw.lines(screen, (200, 150, 150), 1, olist)
 
@@ -77,9 +79,9 @@ class Game:
         self.entities = pygame.sprite.Group()   # все движущиеся существа в игре (даже пули)
         self.map = Map('test_level.txt')
 
-        self.player = Player((50 * 17, 50 * 5), 'assets/player.png', (self.camera, self.entities))
-        self.interface = []
+        self.player = Player((50 * 27, 50 * 5), 'assets/player.png', (self.camera, self.entities))
         # в interface лежат текстуры, которые будут затем выводится на экран без учёта сдвига
+        self.interface = []
 
         self.thread = AnotherThread(self.map, self.camera)
         self.thread.start()
@@ -101,7 +103,7 @@ class Game:
                     if event.button == 1:
                         self.screen.blit(weap.get_bullet(), (100, 100))
                 elif event.type == pygame.MOUSEMOTION:
-                    self.player.set_angle(self.check_angle(event.pos))
+                    self.player.finite_angle = self.check_angle(event.pos)
 
             while self.thread.update_groups.is_set():  # ждём пока персонаж не обработает своё положение
                 pass
