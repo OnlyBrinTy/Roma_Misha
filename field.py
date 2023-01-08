@@ -3,7 +3,7 @@ import pygame
 pygame.init()
 
 MAPS_DIRECTORY = 'maps'
-CELL_SIZE = 50
+CELL_SIZE = pygame.image.load('assets/wall_0.png').get_size()[0]
 
 
 class Block(pygame.sprite.Sprite, Texture):
@@ -22,11 +22,9 @@ class Map(pygame.sprite.Group):  # Класс для создания карт
     def __init__(self, filename):
         super().__init__()
         # принимает на вход имя файла
-        # список спрайтов, по которым можно ходить
-        # а так же чекпоинт, до которог нужно дойти
         # тут должен быть словарь спрайтов, но их пока нет, поэтому словарь пуст
         self.sprites_kinds = {0: None, 1: None, 2: None, 3: None, 4: None}
-        self.map = []  # создание карты
+        self.map_list = []  # создание карты
 
         with open(f'{MAPS_DIRECTORY}/{filename}') as map_file:  # открываем файл с картой
             for y, line in enumerate(map_file):
@@ -35,10 +33,10 @@ class Map(pygame.sprite.Group):  # Класс для создания карт
                     if kind != ' ':
                         row.append(Block(self, kind, (x * CELL_SIZE, y * CELL_SIZE)))    # записываем данные из файла в список
 
-                self.map.append(row)
+                self.map_list.append(row)
 
-        self.map_height = len(self.map)  # высота карты
-        self.map_width = len(self.map[0])  # ширина карты
+        self.map_height = len(self.map_list)  # высота карты
+        self.map_width = len(self.map_list[0])  # ширина карты
 
     def get_sprite_id(self, sprite_position):  # возвращает id спрайта
-        return self.map[sprite_position[1]][sprite_position[0]]
+        return self.map_list[sprite_position[1]][sprite_position[0]]

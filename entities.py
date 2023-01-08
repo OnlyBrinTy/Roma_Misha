@@ -1,7 +1,8 @@
-from threading import Thread, Event
-from texture import Texture
-from rectangle import Rect
-from time import time
+from threading import *
+from rectangle import *
+from time import *
+from random import *
+from field import *
 import pygame
 
 MAX_SPEED = 10
@@ -9,38 +10,38 @@ MAX_SPEED = 10
 
 class Entity(pygame.sprite.Sprite, Texture):
     def __init__(self, start_pos, file_name, groups):
-        pygame.sprite.Sprite.__init__(self, *groups)
+        pygame.sprite.Sprite.__init__(self, groups)
         Texture.__init__(self, start_pos, pygame.image.load(file_name))
 
         self.vectors = Vectors()
         # Так как персонаж по умолчанию крутится очень странно,
         # чтобы скомпенсировать его странное вращение в нормальное используется отдельный вектор
         self.rect_correction = pygame.Vector2()
-        # есть _original_image - это вид картинки по умолчанию(без наклона).
+        # _original_image - это вид картинки по умолчанию(без наклона).
         # Нужна на случай, если картинка крутится
         self._original_image = self.image
-        # вместо встроенного в pygame rect я использую свой аналог.
+        # Bместо встроенного в pygame rect я использую свой аналог.
         # Он отличается тем, что он поддерживает дробные числа в координатах.
-        self.add_rect = Rect(self.rect)
-        self.mask = pygame.mask.from_surface(self.image)
+        self.add_rect = Rect(self.rect)  # Создаем объект класса Rect, куда передаем self.rect из Texture
+        self.mask = pygame.mask.from_surface(self.image)  # Создаем маску изображения для обработки столкновений
 
-        self.half_w = self.rect.width / 2
+        self.half_w = self.rect.width / 2  # Половина ширины и высоты нашего объекта self.rect
         self.half_h = self.rect.height / 2
 
     def set_angle(self, angle):
-        self.image = pygame.transform.rotate(self._original_image, angle)   # поворот картинки
-        self.mask = pygame.mask.from_surface(self.image)    # меняем маску
+        self.image = pygame.transform.rotate(self._original_image, angle)  # поворот картинки
+        self.mask = pygame.mask.from_surface(self.image)  # меняем маску
         self.rect.size = self.image.get_size()  # меняем rect.size на новый
 
-        img_half_w = self.image.get_width() / 2
+        img_half_w = self.image.get_width() / 2 # Половина ширины и высоты self.image
         img_half_h = self.image.get_height() / 2
 
         self.rect_correction.update(self.half_w - img_half_w, self.half_h - img_half_h)
-        self.rect.topleft = self.add_rect.topleft + self.rect_correction    # устанавливаем правильный  topleft
+        self.rect.topleft = self.add_rect.topleft + self.rect_correction  # устанавливаем правильный  topleft
 
     def update(self, delay, group):
-        slowdown = delay / 0.035    # отклонение от стандартного течения времени (1 кадр в 0.035 секунды)
-        self.motion(slowdown)   # обрабатываем физику и нажатия (если есть)
+        slowdown = delay / 0.035  # отклонение от стандартного течения времени (1 кадр в 0.035 секунды)
+        self.motion(slowdown)  # обрабатываем физику и нажатия (если есть)
 
         # для компенсации слишком редкого/частого обновления персонажа
         # скорость умножается на коэффициент замедления времени
@@ -52,37 +53,14 @@ class Entity(pygame.sprite.Sprite, Texture):
         self.rect.topleft = self.add_rect.topleft + self.rect_correction
 
         for sprite in group.sprites():
-            if sprite.kind == 1 and pygame.sprite.collide_mask(self, sprite):   # если столкнулись с красным блоком
+            if sprite.kind == 1 and pygame.sprite.collide_mask(self, sprite):  # если столкнулись с красным блоком
                 pass
-                # следующие комменты можешь удалить
-
-                # self.collision[0] = sprite.rect.collidepoint(self.rect.topleft)
-                # self.collision[1] = sprite.rect.collidepoint(self.rect.topright)
-                # self.collision[2] = sprite.rect.collidepoint(self.rect.bottomleft)
-                # self.collision[3] = sprite.rect.collidepoint(self.rect.bottomright)
-                #
-                # self.collision[4] = sprite.rect.collidepoint(self.rect.midleft)
-                # self.collision[5] = sprite.rect.collidepoint(self.rect.midright)
-                # self.collision[6] = sprite.rect.collidepoint(self.rect.midtop)
-                # self.collision[7] = sprite.rect.collidepoint(self.rect.midbottom)
-
-                # x, y = self.rect.center - pygame.Vector2(sprite.rect.center)
-                #
-                # if abs(x) > abs(y):
-                #     if x > 0:
-                #         print('справа')
-                #     else:
-                #         print('слева')
-                # else:
-                #     if y > 0:
-                #         print('снизу')
-                #     else:
-                #         print('сверху')
 
 
 class Player(Entity):  # Это спрайт для групп camera и entities
     def __init__(self, start_pos, file_name, groups):
         self.vectors = Vectors()
+        self.start_pos = start_pos
         Entity.__init__(self, start_pos, file_name, groups)
 
     def motion(self, slowdown):
@@ -95,7 +73,7 @@ class Player(Entity):  # Это спрайт для групп camera и entitie
             return curr_increase * (slowdown % 1)
 
         keys = pygame.key.get_pressed()
-        w, a, s, d = keys[pygame.K_w], keys[pygame.K_a], keys[pygame.K_s], keys[pygame.K_d]
+        w, a, s, d, ctrl = keys[pygame.K_w], keys[pygame.K_a], keys[pygame.K_s], keys[pygame.K_d], keys[pygame.K_LCTRL]
 
         boost = formula(sum(self.vectors.velocity), int(slowdown))
 
@@ -119,13 +97,25 @@ class Player(Entity):  # Это спрайт для групп camera и entitie
                 self.vectors.velocity -= overload * bool(w == s), overload * bool(a == d)
 
 
-class AnotherThread(Thread):    # обработка сущностей вынесена в отдельный поток
+class Enemies(Entity):  # Это спрайт для групп camera и entities
+    def __init__(self, start_pos, file_name, groups):
+        self.vectors = Vectors()
+        self.start_pos = start_pos
+        Entity.__init__(self, start_pos, file_name, groups)
+
+    def motion(self, slowdown):
+        self.vectors.velocity = randrange(-5, 5), randrange(-5, 5)
+
+
+
+
+class EntityThread(Thread):  # обработка сущностей вынесена в отдельный поток
     def __init__(self, group, *groups_to_update):
         super().__init__()
 
-        self.groups_to_update = groups_to_update    # группы, которые будем обновлять (возможно не только entities)
-        self.update_groups = Event()    # флажок означающий, что надо обновить группы
-        self.terminated = Event()   # флажок означающий, жив или мёртв этот поток (так можно убить извне)
+        self.groups_to_update = groups_to_update  # группы, которые будем обновлять (возможно не только entities)
+        self.update_groups = Event()  # флажок означающий, что надо обновить группы
+        self.terminated = Event()  # флажок означающий, жив или мёртв этот поток (так можно убить извне)
         self.collide_group = group  # група со спрайтами, с которыми будет происходить столкновение
 
     def run(self):
