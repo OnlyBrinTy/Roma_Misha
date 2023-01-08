@@ -1,7 +1,6 @@
-from entities import AnotherThread, Player
+from entities import EntityThread, Player
 from math import atan, degrees
 from map import Map
-import weapon
 import pygame
 
 BACKGROUND_COLOR = '#71ddee'
@@ -12,7 +11,7 @@ FPS = 120
 class Camera(pygame.sprite.GroupSingle):
     offset = pygame.math.Vector2()
 
-    def camera_centering(self):   # установка сдвига камеры так, чтобы игрок оказался по центру
+    def camera_centering(self):  # установка сдвига камеры так, чтобы игрок оказался по центру
         self.offset.x = self.sprite.add_rect.center[0] - WIDTH // 2
         self.offset.y = self.sprite.add_rect.center[1] - HEIGHT // 2
 
@@ -21,50 +20,14 @@ class Camera(pygame.sprite.GroupSingle):
 
         screen.fill(BACKGROUND_COLOR)   # заливка фона
         i = 0
-        for group in groups:    # каждый спрайт выводится на экран друг за другом с учётом сдвига камеры
+        for group in groups:  # каждый спрайт выводится на экран друг за другом с учётом сдвига камеры
             for sprite in group.sprites():
                 screen.blit(sprite.image, sprite.rect.topleft - self.offset)
-            # следующие комменты можешь удалить
-
-            # if i:
-            #     for sprite in group.sprites():
-            #         if sprite.rect.topleft != tuple(map(int, sprite.add_rect.topleft + sprite.rect_correction)):
-            #             print(sprite.rect.topleft, tuple(map(int, sprite.add_rect.topleft + sprite.rect_correction)))
-            #
-            #         screen.blit(sprite.image, sprite.rect.topleft - self.offset)
-            # else:
-            #     for sprite in group.sprites():
-            #         screen.blit(sprite.image, sprite.rect.topleft - self.offset)
 
             i += 1
 
         for texture in interface:
             screen.blit(texture.image, texture.blit_pos)
-
-        # следующие комменты можешь удалить
-
-        # pygame.draw.rect(screen, 'purple', (*self.sprite.rect.topleft - self.offset, *self.sprite.rect.size), 1)
-        # pygame.draw.rect(screen, 'green', (0, 0, *self.sprite.rect.size), 1)
-        #
-        i = 0
-        for sprite in groups[0].sprites():
-            if sprite.kind == 1 and pygame.sprite.collide_mask(self.sprite, sprite):
-                i += 1
-                # colpoint = self.sprite.mask.overlap(sprite.mask, (-10, -10))
-                x, y = pygame.Vector2(self.sprite.rect.topleft) - sprite.rect.topleft
-                # if type(colpoint) is tuple:
-                    # pygame.draw.rect(screen, 'blue', (*colpoint, x, y))
-
-                colmask = sprite.mask.overlap_mask(self.sprite.mask, (x, y))
-                screen.blit(colmask.to_surface(), (i * 50, 0))
-        #
-        # olist = self.sprite.mask.outline()
-        # pygame.draw.lines(screen, (200, 150, 150), 1, olist)
-
-        # b_rects = self.sprite.mask.get_bounding_rects()
-        #
-        # for b_rect in b_rects:
-        #     pygame.draw.rect(screen, 'green', (*b_rect.topleft + self.offset, *b_rect.size), 1)
 
         pygame.display.update()
 
@@ -82,11 +45,11 @@ class Game:
         self.player = Player((50 * 27, 50 * 5), 'assets/player.png', (self.camera, self.entities))
         # в interface лежат текстуры, которые будут затем выводится на экран без учёта сдвига
         self.interface = []
+        # В interface лежат текстуры, которые будут затем выводится на экран
+        # они лежат в порядке отображения. Сначала рисуем землю и поверх неё рисуем игрока
 
-        self.thread = AnotherThread(self.map, self.camera)
+        self.thread = EntityThread(self.map, self.camera)
         self.thread.start()
-
-        weap = weapon.BulletAmount()
 
         clock = pygame.time.Clock()
         running = True
@@ -97,11 +60,9 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
+                    SaveGame('test_level.txt', 'rewardsффффф', '10')
                     self.thread.terminated.set()
                     running = False
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    if event.button == 1:
-                        self.screen.blit(weap.get_bullet(), (100, 100))
                 elif event.type == pygame.MOUSEMOTION:
                     self.player.finite_angle = self.check_angle(event.pos)
 
@@ -138,3 +99,15 @@ class Game:
                 add_angle += 90
 
         return add_angle + 90 * quart_num
+
+
+class SaveGame:
+    def __init__(self, current_checkpoint, rewards, bullet_amount):
+        self.checkpoint = current_checkpoint
+        self.rewards = rewards
+        self.bullet_amount = bullet_amount
+        with open('progress/progress.txt', mode='w', encoding='utf-8') as pg_file:
+            pg_file.write(self.checkpoint + '\n')
+            pg_file.write(self.rewards + '\n')
+            pg_file.write(self.bullet_amount)
+            pg_file.close()

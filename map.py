@@ -12,8 +12,8 @@ class Block(pygame.sprite.Sprite, Texture):
         pygame.sprite.Sprite.__init__(self, group)
         Texture.__init__(self, position, pygame.image.load(f'assets/wall_{kind}.png'))
 
-        self.kind = int(kind)
-        self.bounds = array(bounds)
+        self.kind = int(bool(int(kind)))    # тип - либо стена - 1 либо пол - 0
+        self.bounds = array(bounds)     # наличие стен с 4 сторон
         self.mask = pygame.mask.from_surface(self.image)
 
     def draw(self, surface):

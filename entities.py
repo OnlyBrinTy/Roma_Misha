@@ -1,12 +1,10 @@
 from threading import Thread, Event
 from texture import Texture
 from rectangle import Rect
-import numpy as np
 from math import sqrt
 from time import time
+import numpy as np
 import pygame
-
-# argmax, argmin, any, array, bool_, where, ones, max_
 
 
 class Entity(pygame.sprite.Sprite, Texture):
@@ -44,15 +42,15 @@ class Entity(pygame.sprite.Sprite, Texture):
 
             self.angle = (self.angle + adjust) % 360
 
-        self.image = pygame.transform.rotate(self._original_image, self.angle)   # поворот картинки
-        self.mask = pygame.mask.from_surface(self.image)    # меняем маску
+        self.image = pygame.transform.rotate(self._original_image, self.angle)  # поворот картинки
+        self.mask = pygame.mask.from_surface(self.image)  # меняем маску
         self.rect.size = self.image.get_size()  # меняем rect.size на новый
 
         img_half_w = self.image.get_width() / 2
         img_half_h = self.image.get_height() / 2
 
         self.rect_correction.update(self.half_w - img_half_w, self.half_h - img_half_h)
-        self.rect.topleft = self.add_rect.topleft + self.rect_correction    # устанавливаем правильный  topleft
+        self.rect.topleft = self.add_rect.topleft + self.rect_correction  # устанавливаем правильный  topleft
 
     def get_collision(self, group, check_collision=False):
         def limit(num, if_num, then_num):
@@ -70,7 +68,7 @@ class Entity(pygame.sprite.Sprite, Texture):
         x_ps, y_ps = [], []
         total_bounds = np.zeros(4, dtype=np.bool_)
         for sprite in group.sprites():
-            if sprite.kind == 1 and pygame.sprite.collide_mask(self, sprite):   # если столкнулись с красным блоком
+            if sprite.kind == 1 and pygame.sprite.collide_mask(self, sprite):  # если столкнулись с красным блоком
                 total_bounds += sprite.bounds
 
                 offset = pygame.Vector2(self.rect.topleft) - sprite.rect.topleft
@@ -85,7 +83,7 @@ class Entity(pygame.sprite.Sprite, Texture):
                 top_penetration = limit(np.max(y_array), height, 0)
                 bottom_penetration = limit(np.min(y_array), 1, height + 1) - height - 1
 
-                if positive_y or not(top_penetration and bottom_penetration):
+                if positive_y or not (top_penetration and bottom_penetration):
                     if not sprite.bounds[0] or positive_y is False:
                         top_penetration = 0
                     if not sprite.bounds[1] or positive_y is True:
@@ -125,34 +123,34 @@ class Entity(pygame.sprite.Sprite, Texture):
             return [max(x_ps + [0], key=abs), max(y_ps + [0], key=abs)]
 
     def update(self, delay, group):
-        slowdown = delay / 0.035    # отклонение от стандартного течения времени (1 кадр в 0.035 секунды)
+        slowdown = delay / 0.035  # отклонение от стандартного течения времени (1 кадр в 0.035 секунды)
 
-        self.motion(slowdown)   # обрабатываем физику и нажатия (если есть)
-        self.set_angle(slowdown)    # теперь у кручения тоже есть своя физика
+        self.motion(slowdown)  # обрабатываем физику и нажатия (если есть)
+        self.set_angle(slowdown)  # теперь у кручения тоже есть своя физика
 
-        wall_entrance = self.get_collision(group)   # на сколько пикселей вошёл в стену
+        wall_entrance = self.get_collision(group)  # на сколько пикселей вошёл в стену
         x_used, y_used = 0, 0
 
         if wall_entrance:
             x_used = 1
-            self.add_rect.x -= wall_entrance[0]   # пробуем вытолкнуться по оси x
+            self.add_rect.x -= wall_entrance[0]  # пробуем вытолкнуться по оси x
             print(wall_entrance[0], end=' ')
             self.rect.topleft = self.add_rect.topleft + self.rect_correction
 
         if self.get_collision(group, check_collision=True):  # если мы до сих пор в стене
             y_used = 1
-            self.add_rect.y -= wall_entrance[1]   # пробуем вытолкнуться по оси y
+            self.add_rect.y -= wall_entrance[1]  # пробуем вытолкнуться по оси y
             print(wall_entrance[1])
             self.rect.topleft = self.add_rect.topleft + self.rect_correction
 
-        if wall_entrance:   # если произошло столкновение
+        if wall_entrance:  # если произошло столкновение
             # делаем отскок от стены
-            self.vectors.direction = pygame.Vector2(wall_entrance).elementwise() * (x_used, y_used) * -0.01
-            self.vectors.velocity.update(*map(sqrt, self.vectors.velocity))
+            self.vectors.direction = pygame.Vector2(wall_entrance).elementwise() * (x_used, y_used) * -2
+            self.vectors.velocity = pygame.Vector2(*map(sqrt, self.vectors.velocity))
 
-            overload = sum(self.vectors.velocity) - self.max_speed
+            overload = sum(self.vectors.velocity) - self.max_speed  # уменьшаем скорость если превышена
 
-            if overload:
+            if overload > 0:
                 self.vectors.velocity -= self.vectors.velocity / sum(self.vectors.velocity) * overload
 
 
@@ -160,7 +158,7 @@ class Player(Entity):  # Это спрайт для групп camera и entitie
     def __init__(self, start_pos, file_name, groups):
         self.vectors = Vectors()
         Entity.__init__(self, start_pos, file_name, groups)
-        
+
         self.max_speed = 10
 
     def motion(self, slowdown):
@@ -204,13 +202,13 @@ class Player(Entity):  # Это спрайт для групп camera и entitie
         self.rect.topleft = self.add_rect.topleft + self.rect_correction
 
 
-class AnotherThread(Thread):    # обработка сущностей вынесена в отдельный поток
+class EntityThread(Thread):  # обработка сущностей вынесена в отдельный поток
     def __init__(self, group, *groups_to_update):
         super().__init__()
 
-        self.groups_to_update = groups_to_update    # группы, которые будем обновлять (возможно не только entities)
-        self.update_groups = Event()    # флажок означающий, что надо обновить группы
-        self.terminated = Event()   # флажок означающий, жив или мёртв этот поток (так можно убить извне)
+        self.groups_to_update = groups_to_update  # группы, которые будем обновлять (возможно не только entities)
+        self.update_groups = Event()  # флажок означающий, что надо обновить группы
+        self.terminated = Event()  # флажок означающий, жив или мёртв этот поток (так можно убить извне)
         self.collide_group = group  # група со спрайтами, с которыми будет происходить столкновение
 
     def run(self):
