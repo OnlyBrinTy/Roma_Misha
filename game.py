@@ -29,18 +29,6 @@ class Camera(pygame.sprite.GroupSingle):
         for texture in interface:
             screen.blit(texture.image, texture.blit_pos)
 
-        i = 0
-        for sprite in groups[0].sprites():
-            if sprite.kind == 1 and pygame.sprite.collide_mask(self.sprite, sprite):
-                i += 1
-                # colpoint = self.sprite.mask.overlap(sprite.mask, (-10, -10))
-                x, y = pygame.Vector2(self.sprite.rect.topleft) - sprite.rect.topleft
-                # if type(colpoint) is tuple:
-                # pygame.draw.rect(screen, 'blue', (*colpoint, x, y))
-
-                colmask = sprite.mask.overlap_mask(self.sprite.mask, (x, y))
-                screen.blit(colmask.to_surface(), (i * 50, 0))
-
         pygame.display.update()
 
 

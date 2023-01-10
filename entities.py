@@ -118,10 +118,14 @@ class Entity(pygame.sprite.Sprite, Texture):
                         positive_x = self.rect.centerx < sprite.rect.centerx
 
                 if y_ps[-1] and x_ps[-1]:
-                    if abs(y_ps[-1]) > abs(x_ps[-1]):
-                        y_ps[-1] = 0
-                    elif abs(x_ps[-1]) > abs(y_ps[-1]):
-                        x_ps[-1] = 0
+                    difference = abs(y_ps[-1] - x_ps[-1])
+
+                    if difference > 1:
+                        abs_x, abs_y = abs(x_ps[-1]), abs(y_ps[-1])
+                        if abs_x > abs_y:
+                            x_ps[-1] = 0
+                        elif abs_y > abs_x:
+                            y_ps[-1] = 0
 
         if x_ps or y_ps:
             return [max(x_ps, key=abs), max(y_ps, key=abs)]
@@ -198,15 +202,15 @@ class Player(Entity):  # Это спрайт для групп camera и entitie
         self.basic_update(delay)
 
         wall_entrance = self.get_collision(group)  # на сколько пикселей вошёл в стену
-        x_used, y_used = 0, 0
+        # x_used, y_used = 0, 0
 
         if wall_entrance:
-            x_used = 1
+            # x_used = 1
             self.add_rect.x -= wall_entrance[0]  # пробуем вытолкнуться по оси x
             self.rect.topleft = self.add_rect.topleft + self.rect_correction
 
         if self.get_collision(group, check_collision=True):  # если мы до сих пор в стене
-            y_used = 1
+            # y_used = 1
             self.add_rect.y -= wall_entrance[1]  # пробуем вытолкнуться по оси y
             self.rect.topleft = self.add_rect.topleft + self.rect_correction
 
