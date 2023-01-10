@@ -1,12 +1,14 @@
+from shapely import LineString
 from threading import Thread, Event
 from math import sin, cos, radians
 from texture import Texture
 from rectangle import Rect
 from weapon import Weapon
-from math import sqrt
 from time import time
 import numpy as np
 import pygame
+
+BULLET_DAMAGE = 1
 
 
 class Entity(pygame.sprite.Sprite, Texture):
@@ -23,7 +25,6 @@ class Entity(pygame.sprite.Sprite, Texture):
         self._original_image = self.image
         # вместо встроенного в pygame rect я использую свой аналог.
         self.finite_angle = self.angle = 0
-        self.to_shoot = False
         # угол наклона картинки
         # Он отличается тем, что он поддерживает дробные числа в координатах.
         self.add_rect = Rect(self.rect)
@@ -52,7 +53,7 @@ class Entity(pygame.sprite.Sprite, Texture):
         self.rect_correction.update(self.add_rect.h_width - img_half_w, self.add_rect.h_height - img_half_h)
         self.rect.topleft = self.add_rect.topleft + self.rect_correction  # устанавливаем правильный  topleft
 
-    def get_collision(self, group, check_collision=False):
+    def get_wall_collision(self, walls_group, check_collision=False):
         def limit(num, if_num, then_num):
             if num >= 0:
                 num += 1
@@ -66,13 +67,13 @@ class Entity(pygame.sprite.Sprite, Texture):
 
         positive_x, positive_y = None, None
         x_ps, y_ps = [], []
-        for sprite in group.sprites():
-            if sprite.kind and pygame.sprite.collide_mask(self, sprite):  # если столкнулись с красным блоком
+        for wall in walls_group.sprites():
+            if wall.kind and pygame.sprite.collide_mask(self, wall):  # если столкнулись с красным блоком
                 if check_collision:
                     return True
 
-                offset = pygame.Vector2(self.rect.topleft) - sprite.rect.topleft
-                collide_mask = sprite.mask.overlap_mask(self.mask, offset)
+                offset = pygame.Vector2(self.rect.topleft) - wall.rect.topleft
+                collide_mask = wall.mask.overlap_mask(self.mask, offset)
                 width, height = collide_mask.get_size()
 
                 bit_array = np.ones(collide_mask.get_size(), dtype=np.bool_)
@@ -86,9 +87,9 @@ class Entity(pygame.sprite.Sprite, Texture):
                 if not positive_y and top_penetration and bottom_penetration:
                     top_penetration = bottom_penetration = 0
                 else:
-                    if not sprite.bounds[0] or positive_y is False:
+                    if not wall.bounds[0] or positive_y is False:
                         top_penetration = 0
-                    if not sprite.bounds[1] or positive_y is True:
+                    if not wall.bounds[1] or positive_y is True:
                         bottom_penetration = 0
 
                 y_ps.append(max(bottom_penetration, top_penetration, key=abs))
@@ -96,7 +97,7 @@ class Entity(pygame.sprite.Sprite, Texture):
                     if y_ps[0]:
                         positive_y = y_ps[0] > 0
                     else:
-                        positive_y = self.rect.centery < sprite.rect.centery
+                        positive_y = self.rect.centery < wall.rect.centery
 
                 x_array = np.where(np.any(bit_array, axis=1))
                 left_penetration = limit(np.max(x_array), width, 0)
@@ -105,9 +106,9 @@ class Entity(pygame.sprite.Sprite, Texture):
                 if not positive_x and left_penetration and right_penetration:
                     left_penetration = right_penetration = 0
                 else:
-                    if not sprite.bounds[2] or positive_x is False:
+                    if not wall.bounds[2] or positive_x is False:
                         left_penetration = 0
-                    if not sprite.bounds[3] or positive_x is True:
+                    if not wall.bounds[3] or positive_x is True:
                         right_penetration = 0
 
                 x_ps.append(max(right_penetration, left_penetration, key=abs))
@@ -115,7 +116,7 @@ class Entity(pygame.sprite.Sprite, Texture):
                     if x_ps[0]:
                         positive_x = x_ps[0] > 0
                     else:
-                        positive_x = self.rect.centerx < sprite.rect.centerx
+                        positive_x = self.rect.centerx < wall.rect.centerx
 
                 if y_ps[-1] and x_ps[-1]:
                     difference = abs(y_ps[-1] - x_ps[-1])
@@ -130,19 +131,73 @@ class Entity(pygame.sprite.Sprite, Texture):
         if x_ps or y_ps:
             return [max(x_ps, key=abs), max(y_ps, key=abs)]
 
-    def basic_update(self, delay):
+    def check_entity_collision(self):
+        for entity in self.groups()[0]:
+            if self is not entity and entity.__class__.__name__ != 'Bullet' and pygame.sprite.collide_mask(self, entity):  # если столкнулись с кем-то или с пулей
+                return entity
+
+    def basic_entity_update(self, delay):
         slowdown = delay / 0.035  # отклонение от стандартного течения времени (1 кадр в 0.035 секунды)
 
         self.motion(slowdown)  # обрабатываем физику и нажатия (если есть)
         self.set_angle(slowdown)  # теперь у кручения тоже есть своя физика
 
 
-class Player(Entity):  # Это спрайт для групп camera и entities
+class Actor:
+    to_shoot = False
+    pr_angles = []
+
+    def shoot(self):
+        if self.weapon.shoot():
+            pos_in_radians = radians(self.angle + 87)
+            dir_in_radians = radians(self.angle + 90)
+
+            hypotinuse = self.add_rect.h_width + 15
+
+            barrel_addition = hypotinuse * sin(pos_in_radians), hypotinuse * cos(pos_in_radians)
+            bullet_pos = pygame.Vector2(self.add_rect.center) + barrel_addition
+
+            direction = self.add_rect.h_width * sin(dir_in_radians), self.add_rect.h_width * cos(dir_in_radians)
+
+            Bullet(bullet_pos, 'assets/bullet.png', (self.groups()[0],), direction, self.angle)
+
+            self.to_shoot = False
+
+    def basic_actor_update(self, group):
+        collide_entity = self.check_entity_collision()
+
+        if collide_entity:
+            bottom_right = map(lambda c: c[0] > c[1], zip(self.add_rect.center, collide_entity.add_rect.center))
+            self.add_rect.topleft += tuple(map(lambda n: int(n) * 10 - 5, bottom_right))
+            self.rect.topleft = self.add_rect.topleft + self.rect_correction
+
+        wall_entrance = self.get_wall_collision(group)  # на сколько пикселей вошёл в стену
+        # x_used, y_used = 0, 0
+
+        if wall_entrance:
+            # x_used = 1
+            self.add_rect.x -= wall_entrance[0]  # пробуем вытолкнуться по оси x
+            self.rect.topleft = self.add_rect.topleft + self.rect_correction
+
+        if self.get_wall_collision(group, check_collision=True):  # если мы до сих пор в стене
+            # y_used = 1
+            self.add_rect.y -= wall_entrance[1]  # пробуем вытолкнуться по оси y
+            self.rect.topleft = self.add_rect.topleft + self.rect_correction
+
+        if self.to_shoot:
+            self.shoot()
+
+        if self.hp <= 0:
+            self.kill()
+
+
+class Player(Entity, Actor):  # Это спрайт для групп camera и entities
     def __init__(self, start_pos, file_name, groups):
         Entity.__init__(self, start_pos, file_name, groups)
 
         self.max_speed = 10
         self.weapon = Weapon(30)
+        self.hp = 1
 
     def motion(self, slowdown):
         def formula(speed, depth):
@@ -184,48 +239,37 @@ class Player(Entity):  # Это спрайт для групп camera и entitie
         #   а topleft всегда изменяется в зависимости от разворота картинки (чтобы не болтало, как это было раньше)
         self.rect.topleft = self.add_rect.topleft + self.rect_correction
 
-    def shoot(self):
-        if self.weapon.shoot():
-            pos_in_radians = radians(self.angle + 87)
-            dir_in_radians = radians(self.angle + 90)
+    def update(self, delay, group):
+        self.basic_entity_update(delay)
+        self.basic_actor_update(group)
 
-            barrel_addition = self.add_rect.h_width * sin(pos_in_radians), self.add_rect.h_width * cos(pos_in_radians)
-            bullet_pos = pygame.Vector2(self.rect.center) + barrel_addition
 
-            direction = self.add_rect.h_width * sin(dir_in_radians), self.add_rect.h_width * cos(dir_in_radians)
+class Enemy(Entity, Actor):
+    def __init__(self, start_pos, file_name, groups):
+        Entity.__init__(self, start_pos, file_name, groups)
 
-            Bullet(bullet_pos, 'assets/bullet.png', (self.groups()[0],), direction, self.angle)
+        self.player = self.groups()[0].sprites()[0]
+        self.max_speed = 5
+        self.weapon = Weapon(100)
+        self.first_noticing = False
+        self.hp = 3
 
-            self.to_shoot = False
+    def motion(self, slowdown):
+        self.add_rect.topleft += self.vectors.direction * slowdown
+        self.rect.topleft = self.add_rect.topleft + self.rect_correction
+
+    def check_player(self, polygons):
+        view_line = LineString((self.rect.center, self.player.rect.center))
+
+        for polygon in polygons:
+            if view_line.intersects(polygon):
+                break
+        else:
+            return True
 
     def update(self, delay, group):
-        self.basic_update(delay)
-
-        wall_entrance = self.get_collision(group)  # на сколько пикселей вошёл в стену
-        # x_used, y_used = 0, 0
-
-        if wall_entrance:
-            # x_used = 1
-            self.add_rect.x -= wall_entrance[0]  # пробуем вытолкнуться по оси x
-            self.rect.topleft = self.add_rect.topleft + self.rect_correction
-
-        if self.get_collision(group, check_collision=True):  # если мы до сих пор в стене
-            # y_used = 1
-            self.add_rect.y -= wall_entrance[1]  # пробуем вытолкнуться по оси y
-            self.rect.topleft = self.add_rect.topleft + self.rect_correction
-
-        # if wall_entrance:  # если произошло столкновение
-        #     # делаем отскок от стены
-        #     self.vectors.direction = pygame.Vector2(wall_entrance).elementwise() * (x_used, y_used) * -2
-        #     self.vectors.velocity = pygame.Vector2(*map(sqrt, self.vectors.velocity))
-        #
-        #     overload = sum(self.vectors.velocity) - self.max_speed  # уменьшаем скорость если превышена
-        #
-        #     if overload > 0:
-        #         self.vectors.velocity -= self.vectors.velocity / sum(self.vectors.velocity) * overload
-
-        if self.to_shoot:
-            self.shoot()
+        self.basic_entity_update(delay)
+        self.basic_actor_update(group)
 
 
 class Bullet(Entity):
@@ -233,7 +277,7 @@ class Bullet(Entity):
         Entity.__init__(self, start_pos, file_name, groups)
 
         self.vectors.direction.update(direction)
-        self.vectors.direction /= 5
+        self.vectors.direction /= 10
 
         self.finite_angle, self.angle = angle, angle + 1
         self.set_angle(None)
@@ -243,10 +287,17 @@ class Bullet(Entity):
         self.rect.topleft = self.add_rect.topleft + self.rect_correction
 
     def update(self, delay, group):
-        self.basic_update(delay)
+        self.basic_entity_update(delay)
 
-        if self.get_collision(group, check_collision=True):
+        if self.get_wall_collision(group, check_collision=True):
             self.kill()
+        else:
+            shot_actor = self.check_entity_collision()
+
+            if shot_actor:
+                shot_actor.hp -= BULLET_DAMAGE
+
+                self.kill()
 
 
 class EntityThread(Thread):  # обработка сущностей вынесена в отдельный поток

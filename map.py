@@ -1,6 +1,8 @@
+from shapely import Polygon
 from texture import Texture
 from numpy import array
 import pygame
+
 pygame.init()
 
 MAPS_DIRECTORY = 'maps'
@@ -12,8 +14,8 @@ class Block(pygame.sprite.Sprite, Texture):
         pygame.sprite.Sprite.__init__(self, group)
         Texture.__init__(self, position, pygame.image.load(f'assets/wall_{kind}.png'))
 
-        self.kind = int(bool(int(kind)))    # тип - либо стена - 1 либо пол - 0
-        self.bounds = array(bounds)     # наличие стен с 4 сторон
+        self.kind = int(bool(int(kind)))  # тип - либо стена - 1 либо пол - 0
+        self.bounds = array(bounds)  # наличие стен с 4 сторон
         self.mask = pygame.mask.from_surface(self.image)
 
     def draw(self, surface):
@@ -40,11 +42,8 @@ class Map(pygame.sprite.Group):  # Класс для создания карт
 
             return bounds
 
-        # принимает на вход имя файла
-        # список спрайтов, по которым можно ходить
-        # а так же чекпоинт, до которог нужно дойти
-        # тут должен быть словарь спрайтов, но их пока нет, поэтому словарь пуст
-        self.sprites_kinds = {0: None, 1: None, 2: None, 3: None, 4: None}
+        # это карта в виде полигонов. Пригодится в классе Enemy при проверке видимости игрока
+        self.shapes_map = []
         self.map = []  # создание карты
 
         with open(f'{MAPS_DIRECTORY}/{filename}') as map_file:  # открываем файл с картой
@@ -54,8 +53,15 @@ class Map(pygame.sprite.Group):  # Класс для создания карт
                 row = []
                 for j, kind in enumerate(line):
                     if kind != ' ':
+                        x, y = j * CELL_SIZE, i * CELL_SIZE
                         # записываем данные из файла в список
-                        row.append(Block(self, kind, (j * CELL_SIZE, i * CELL_SIZE), get_bounds(i, j, map_list)))
+                        row.append(Block(self, kind, (x, y), get_bounds(i, j, map_list)))
+
+                        if int(kind):
+                            #  добавляем форму в ряд
+
+                            self.shapes_map.append(Polygon(((x, y), (x + CELL_SIZE, y), (x + CELL_SIZE, y + CELL_SIZE),
+                                                            (x, y + CELL_SIZE))))
 
                 self.map.append(row)
 
