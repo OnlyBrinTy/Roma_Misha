@@ -1,17 +1,16 @@
-from threading import Thread, Event
-from math import sin, cos, radians
-from texture import Texture
-from rectangle import Rect
-from weapon import Weapon
-from math import sqrt
-from time import time
+from threading import *
+from texture import *
+from rectangle import *
+from weapon import *
+from math import *
+from time import *
 import numpy as np
 import pygame
 
 
 class Entity(pygame.sprite.Sprite, Texture):
     def __init__(self, start_pos, file_name, groups):
-        pygame.sprite.Sprite.__init__(self, *groups)
+        pygame.sprite.Sprite.__init__(self, groups)
         Texture.__init__(self, start_pos, pygame.image.load(file_name))
 
         self.vectors = Vectors()
@@ -271,6 +270,18 @@ class EntityThread(Thread):  # обработка сущностей вынес�
                     group.update(delay, self.collide_group)
 
                 self.update_groups.clear()  # ставим флажок обновления на False
+
+
+class Enemies(Entity):  # Это спрайт для групп camera и entities
+    def __init__(self, start_pos, file_name, groups):
+        self.vectors = Vectors()
+        self.start_pos = start_pos
+        Entity.__init__(self, start_pos, file_name, groups)
+
+    def motion(self, slowdown):
+        self.vectors.velocity = 50, 50
+
+    # def update(self, delay, group):
 
 
 class Vectors:  # содержит direction (пример [5.5, -4.5]) и его аналог velocity, но под модулем (пример [5.5, 4.5])

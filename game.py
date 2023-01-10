@@ -1,6 +1,6 @@
-from entities import EntityThread, Player
-from math import atan, degrees
-from map import Map
+from entities import *
+from math import *
+from map import *
 import pygame
 
 BACKGROUND_COLOR = '#71ddee'
@@ -33,16 +33,17 @@ class Camera(pygame.sprite.GroupSingle):
 
 
 class Game:
-    def __init__(self):
+    def __init__(self, map_file):
         pygame.init()
 
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), vsync=True)
 
         self.camera = Camera()  # через камеру происходит отображение всего на экране
         self.entities = pygame.sprite.Group()   # все движущиеся существа в игре (даже пули)
-        self.map = Map('test_level.txt')
+        self.map = Map(map_file)
 
         self.player = Player((50 * 27, 50 * 5), 'assets/player.png', (self.entities, self.camera))
+        self.enemy = Enemies((50 * 25, 50 * 7), 'assets/player.png', self.entities)
         # в interface лежат текстуры, которые будут затем выводится на экран без учёта сдвига
         self.interface = []
         # В interface лежат текстуры, которые будут затем выводится на экран
