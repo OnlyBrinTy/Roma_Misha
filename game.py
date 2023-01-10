@@ -5,6 +5,7 @@ import pygame
 
 BACKGROUND_COLOR = '#71ddee'
 WIDTH, HEIGHT = 1280, 720
+CELL_SIZE = pygame.image.load('assets/wall_0.png').get_size()[0]
 FPS = 120
 
 
@@ -42,8 +43,8 @@ class Game:
         self.entities = pygame.sprite.Group()   # все движущиеся существа в игре (даже пули)
         self.map = Map(map_file)
 
-        self.player = Player((50 * 27, 50 * 5), 'assets/player.png', (self.entities, self.camera))
-        self.enemy = Enemies((50 * 25, 50 * 7), 'assets/player.png', self.entities)
+        self.player = Player((CELL_SIZE * 1, CELL_SIZE * 1), 'assets/player.png', (self.entities, self.camera))
+        self.enemy = Enemies((CELL_SIZE * 1, CELL_SIZE * 1), 'assets/player.png', self.entities)
         # в interface лежат текстуры, которые будут затем выводится на экран без учёта сдвига
         self.interface = []
         # В interface лежат текстуры, которые будут затем выводится на экран
