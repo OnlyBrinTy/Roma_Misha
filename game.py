@@ -29,6 +29,18 @@ class Camera(pygame.sprite.GroupSingle):
         for texture in interface:
             screen.blit(texture.image, texture.blit_pos)
 
+        i = 0
+        for sprite in groups[0].sprites():
+            if sprite.kind == 1 and pygame.sprite.collide_mask(self.sprite, sprite):
+                i += 1
+                # colpoint = self.sprite.mask.overlap(sprite.mask, (-10, -10))
+                x, y = pygame.Vector2(self.sprite.rect.topleft) - sprite.rect.topleft
+                # if type(colpoint) is tuple:
+                # pygame.draw.rect(screen, 'blue', (*colpoint, x, y))
+
+                colmask = sprite.mask.overlap_mask(self.sprite.mask, (x, y))
+                screen.blit(colmask.to_surface(), (i * 50, 0))
+
         pygame.display.update()
 
 
@@ -42,13 +54,13 @@ class Game:
         self.entities = pygame.sprite.Group()   # все движущиеся существа в игре (даже пули)
         self.map = Map('test_level.txt')
 
-        self.player = Player((50 * 27, 50 * 5), 'assets/player.png', (self.camera, self.entities))
+        self.player = Player((50 * 27, 50 * 5), 'assets/player.png', (self.entities, self.camera))
         # в interface лежат текстуры, которые будут затем выводится на экран без учёта сдвига
         self.interface = []
         # В interface лежат текстуры, которые будут затем выводится на экран
         # они лежат в порядке отображения. Сначала рисуем землю и поверх неё рисуем игрока
 
-        self.thread = EntityThread(self.map, self.camera)
+        self.thread = EntityThread(self.map, self.entities)
         self.thread.start()
 
         clock = pygame.time.Clock()
@@ -60,11 +72,14 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
-                    SaveGame('test_level.txt', 'rewardsффффф', '10')
+                    SaveGame('test_level.txt', 'rewards', '10')
                     self.thread.terminated.set()
                     running = False
                 elif event.type == pygame.MOUSEMOTION:
                     self.player.finite_angle = self.check_angle(event.pos)
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 1:
+                        self.player.to_shoot = True
 
             while self.thread.update_groups.is_set():  # ждём пока персонаж не обработает своё положение
                 pass
@@ -73,10 +88,10 @@ class Game:
 
             clock.tick(FPS)
 
-    def check_angle(self, mouse_pos):   # определение угла поворота в зависимости от положения мыши
+    def check_angle(self, point_pos):   # определение угла поворота в зависимости от положения мыши
         quarters = {(True, False): 0, (False, False): 1, (False, True): 2, (True, True): 3}
 
-        x_dist, y_dist = mouse_pos - pygame.Vector2(self.player.add_rect.center - self.camera.offset)
+        x_dist, y_dist = point_pos - pygame.Vector2(self.player.add_rect.center - self.camera.offset)
         quart_num = quarters[(x_dist > 0, y_dist > 0)]
 
         if x_dist == 0 or y_dist == 0:
