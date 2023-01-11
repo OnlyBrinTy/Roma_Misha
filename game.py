@@ -34,15 +34,14 @@ class Camera(pygame.sprite.GroupSingle):
 
 
 class Game:
-    def __init__(self):
+    def __init__(self, map_file):
         pygame.init()
 
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), vsync=True)
 
         self.camera = Camera()  # через камеру происходит отображение всего на экране
         self.entities = pygame.sprite.Group()   # все движущиеся существа в игре (даже пули)
-        self.level = 'test'
-        self.map = Map(f'{self.level}_level.txt')
+        self.map = Map(map_file)
 
         self.player = Player((50 * 27, 50 * 5), 'assets/player.png', (self.entities, self.camera))
         self.enemies = [Enemy(pos, 'assets/player.png', (self.entities,)) for pos in ENEMIES_POSITION[self.level]]

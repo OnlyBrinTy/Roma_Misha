@@ -1,7 +1,8 @@
-from button import Button
-from game import Game
+from button import *
+from game import *
 import pygame
 
+FIRST_LEVEL = 'test_level.txt'
 EXTRA_WIDTH, EXTRA_HEIGHT = 600, 400
 BACKGROUND_COLOR = (41, 52, 80)
 
@@ -51,7 +52,7 @@ class SettingsWindow(ExtraWindow):
 
         difficulty = {'easy': 1, 'medium': 2, 'hard': 3}[button_text]
 
-        Game()
+        Game(FIRST_LEVEL)
 
     def draw(self):
         self.screen.fill(BACKGROUND_COLOR)
@@ -81,7 +82,7 @@ class StartWindow(ExtraWindow):
         if button_text == 'start':  # Обработка нажатия на кнопку start
             SettingsWindow()
         elif button_text == 'continue':  # Обработка нажатия на кнопку continue
-            Game()
+            Game(FIRST_LEVEL)
 
     def draw(self):
         self.screen.fill(BACKGROUND_COLOR)

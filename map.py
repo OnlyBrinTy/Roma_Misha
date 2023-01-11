@@ -2,11 +2,10 @@ from shapely import Polygon
 from texture import Texture
 from numpy import array
 import pygame
-
 pygame.init()
 
 MAPS_DIRECTORY = 'maps'
-CELL_SIZE = 50
+CELL_SIZE = pygame.image.load('assets/wall_0.png').get_size()[0]
 
 
 class Block(pygame.sprite.Sprite, Texture):
