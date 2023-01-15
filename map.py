@@ -1,19 +1,25 @@
 from texture import *
 from numpy import *
 import pygame
+
 pygame.init()
 
 MAPS_DIRECTORY = 'maps'
-CELL_SIZE = pygame.image.load('assets/walls/wall_0.png').get_size()[0]
+CELL_SIZE = pygame.image.load('assets/walls/floor.png').get_size()[0]
+sprites_kinds = {0: 'floor', 1: 'wall_1', 2: 'wall_1_1', 3: 'wall_1_2_angle',
+                 4: 'wall_1_2_parallel', 5: 'wall_1_3', 6: 'wall_1_4'}
+walls_kind = {'floor': 0, 'wall_1': 1, 'wall_1_1': 2, 'wall_1_2_angle': 3,
+              'wall_1_2_parallel': 4, 'wall_1_3': 5, 'wall_1_4': 6}
 
 
 class Block(pygame.sprite.Sprite, Texture):
-    def __init__(self, group, kind, position, bounds):
+    def __init__(self, group, kind, position, bounds, rotation_angle):
         pygame.sprite.Sprite.__init__(self, group)
-        Texture.__init__(self, position, pygame.image.load(f'assets/walls/wall_{kind}.png'))
+        Texture.__init__(self, position,
+                         pygame.transform.rotate(pygame.image.load(f'assets/walls/{kind}.png'), 90 * rotation_angle))
 
-        self.kind = int(bool(int(kind)))    # тип - либо стена - 1 либо пол - 0
-        self.bounds = array(bounds)     # наличие стен с 4 сторон
+        self.kind = walls_kind[kind]  # тип - либо стена - 1 либо пол - 0
+        self.bounds = array(bounds)  # наличие стен с 4 сторон
         self.mask = pygame.mask.from_surface(self.image)
 
     def draw(self, surface):
@@ -44,7 +50,6 @@ class Map(pygame.sprite.Group):  # Класс для создания карт
         # список спрайтов, по которым можно ходить
         # а так же чекпоинт, до которог нужно дойти
         # тут должен быть словарь спрайтов, но их пока нет, поэтому словарь пуст
-        self.sprites_kinds = {0: None, 1: None, 2: None, 3: None, 4: None}
         self.map = []  # создание карты
 
         with open(f'{MAPS_DIRECTORY}/{filename}') as map_file:  # открываем файл с картой
@@ -55,9 +60,74 @@ class Map(pygame.sprite.Group):  # Класс для создания карт
                 for j, kind in enumerate(line):
                     if kind != ' ':
                         # записываем данные из файла в список
-                        row.append(Block(self, kind, (j * CELL_SIZE, i * CELL_SIZE), get_bounds(i, j, map_list)))
+                        block_kind = sprites_kinds[int(kind)]
+                        rotation_angle = 0
+
+                        if kind == '1' and j < 19 and i < 19:
+                            if map_list[i][j + 1] == '0':
+                                block_kind = sprites_kinds[2]
+                                rotation_angle = -1
+                            elif map_list[i][j - 1] == '0':
+                                block_kind = sprites_kinds[2]
+                                rotation_angle = 1
+                            elif map_list[i + 1][j] == '0':
+                                block_kind = sprites_kinds[2]
+                                rotation_angle = 2
+                            elif map_list[i - 1][j] == '0':
+                                block_kind = sprites_kinds[2]
+                                rotation_angle = 1
+
+                            if map_list[i][j + 1] == '0' and map_list[i + 1][j] == '0':
+                                block_kind = sprites_kinds[3]
+                                rotation_angle = -1
+                            elif map_list[i][j + 1] == '0' and map_list[i - 1][j] == '0':
+                                block_kind = sprites_kinds[3]
+                                rotation_angle = 0
+                            elif map_list[i][j - 1] == '0' and map_list[i + 1][j] == '0':
+                                block_kind = sprites_kinds[3]
+                                rotation_angle = 2
+                            elif map_list[i][j - 1] == '0' and map_list[i - 1][j] == '0':
+                                block_kind = sprites_kinds[3]
+                                rotation_angle = 1
+
+                            if map_list[i][j - 1] == '0' and map_list[i][j + 1] == '0':
+                                block_kind = sprites_kinds[4]
+                                rotation_angle = 1
+                            elif map_list[i - 1][j] == '0' and map_list[i + 1][j] == '0':
+                                block_kind = sprites_kinds[4]
+                                rotation_angle = 0
+
+                            if map_list[i][j - 1] == '0' and map_list[i][j + 1] == '0' and map_list[i - 1][j] == '0':
+                                block_kind = sprites_kinds[5]
+                                rotation_angle = 0
+                            elif map_list[i][j - 1] == '0' and map_list[i][j + 1] == '0' and map_list[i + 1][j] == '0':
+                                block_kind = sprites_kinds[5]
+                                rotation_angle = 2
+                            elif map_list[i][j - 1] == '0' and map_list[i - 1][j] == '0' and map_list[i + 1][j] == '0':
+                                block_kind = sprites_kinds[5]
+                                rotation_angle = 1
+                            elif map_list[i][j + 1] == '0' and map_list[i - 1][j] == '0' and map_list[i + 1][j] == '0':
+                                block_kind = sprites_kinds[5]
+                                rotation_angle = -1
+
+                            if map_list[i][j + 1] == '0' and map_list[i][j - 1] == '0' and \
+                                    map_list[i + 1][j] == '0' and map_list[i - 1][j] == '0':
+                                block_kind = sprites_kinds[6]
+                                rotation_angle = 0
+
+                        if kind == '1' and (j == 19 or i == 19):
+                            if map_list[i][j - 1] == '0':
+                                block_kind = sprites_kinds[2]
+                                rotation_angle = 1
+                            elif map_list[i - 1][j] == '0':
+                                block_kind = sprites_kinds[2]
+                                rotation_angle = 1
+
+                        row.append(Block(self, block_kind, (j * CELL_SIZE, i * CELL_SIZE),
+                                         get_bounds(i, j, map_list), rotation_angle))
 
                 self.map.append(row)
+            map_file.close()
 
     def get_sprite_id(self, sprite_position):  # возвращает id спрайта
         return self.map[sprite_position[1]][sprite_position[0]]
