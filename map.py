@@ -63,7 +63,7 @@ class Map(pygame.sprite.Group):  # Класс для создания карт
                         block_kind = sprites_kinds[int(kind)]
                         rotation_angle = 0
 
-                        if kind == '1' and j < 19 and i < 19:
+                        if kind == '1' and i < len(map_list) - 1 and j < len(map_list[0]) - 1:
                             if map_list[i][j + 1] == '0':
                                 block_kind = sprites_kinds[2]
                                 rotation_angle = -1
@@ -75,7 +75,7 @@ class Map(pygame.sprite.Group):  # Класс для создания карт
                                 rotation_angle = 2
                             elif map_list[i - 1][j] == '0':
                                 block_kind = sprites_kinds[2]
-                                rotation_angle = 1
+                                rotation_angle = 0
 
                             if map_list[i][j + 1] == '0' and map_list[i + 1][j] == '0':
                                 block_kind = sprites_kinds[3]
@@ -115,14 +115,14 @@ class Map(pygame.sprite.Group):  # Класс для создания карт
                                 block_kind = sprites_kinds[6]
                                 rotation_angle = 0
 
-                        if kind == '1' and (j == 19 or i == 19):
+                        elif kind == '1' and i == len(map_list) - 1 and j < len(map_list[0]) - 1:
+                            if map_list[i - 1][j] == '0':
+                                block_kind = sprites_kinds[2]
+                                rotation_angle = 0
+                        elif kind == '1' and j == len(map_list[0]) - 1 and i < len(map_list) - 1:
                             if map_list[i][j - 1] == '0':
                                 block_kind = sprites_kinds[2]
                                 rotation_angle = 1
-                            elif map_list[i - 1][j] == '0':
-                                block_kind = sprites_kinds[2]
-                                rotation_angle = 1
-
                         row.append(Block(self, block_kind, (j * CELL_SIZE, i * CELL_SIZE),
                                          get_bounds(i, j, map_list), rotation_angle))
 

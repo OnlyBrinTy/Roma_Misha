@@ -6,7 +6,7 @@ import pygame
 
 BACKGROUND_COLOR = '#71ddee'
 WIDTH, HEIGHT = 1280, 720
-CELL_SIZE = pygame.image.load('assets/walls/wall_0.png').get_size()[0]
+CELL_SIZE = pygame.image.load('assets/walls/floor.png').get_size()[0]
 FPS = 120
 
 
@@ -67,7 +67,7 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
-                    self.save_game('test_level.txt', 'rewards', 10, 1000,
+                    self.save_game(self.level, 'rewards', 10, 1000,
                                    self.player.rect.center, self.enemy.rect.center, self.enemy_amount)
                     self.thread.terminated.set()
                     running = False
@@ -81,6 +81,7 @@ class Game:
                 pass
 
             self.camera.draw((self.map, self.entities), self.interface, self.screen)
+            print(self.player.rect.center)
 
             clock.tick(FPS)
 
@@ -121,7 +122,7 @@ class Game:
             pg_file.write(f'{player_pos[0]} {player_pos[1]}' + '\n')
             pg_file.write(f'{enemy_pos[0]} {enemy_pos[1]}' + '\n')
             pg_file.write(str(enemy_amount))
-        pg_file.close()
+            pg_file.close()
 
 
     def start_game(self, new_game):
@@ -130,7 +131,7 @@ class Game:
                 level, rewards, player_bullets, enemy_bullets, player_pos, enemy_amount = pg_file.readlines()
         else:
             with open('progress/progress.txt', mode='r', encoding='utf-8') as pg_file:
-                level, rewards, player_bullets, enemy_bullets, player_pos, enemy_amount = pg_file.readlines()
+                level, rewards, player_bullets, enemy_bullets, player_pos, enemy_pos, enemy_amount = pg_file.readlines()
         pg_file.close()
         level = level[:-1]
         player_bullets = int(player_bullets)
