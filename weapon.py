@@ -1,4 +1,4 @@
-from time import time
+from time import *
 import pygame
 
 pygame.init()
@@ -10,7 +10,7 @@ class Weapon:
         self.bullets = bullets
         self.font = pygame.font.Font('assets/pixeboy.ttf', 35)
         self.timer_start = time()
-        self.cooldown = 0.5
+        self.cooldown = 0.3
 
     def shoot(self):
         if self.bullets and time() - self.timer_start >= self.cooldown:

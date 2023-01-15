@@ -1,6 +1,7 @@
 from entities import *
 from math import *
 from map import *
+from random import *
 import pygame
 
 BACKGROUND_COLOR = '#71ddee'
@@ -34,21 +35,21 @@ class Camera(pygame.sprite.GroupSingle):
 
 
 class Game:
-    def __init__(self, map_file):
+    def __init__(self, new_game):
         pygame.init()
 
-        self.level, self.rewards, self.player_bullets, self.enemy_bullets, self.player_pos, self.enemy_pos = self.start_game()
+        self.level, self.rewards, self.player_bullets, \
+            self.enemy_bullets, self.player_pos, self.enemy_pos, self.enemy_amount = self.start_game(new_game)
 
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), vsync=True)
-
         self.camera = Camera()  # через камеру происходит отображение всего на экране
         self.entities = pygame.sprite.Group()  # все движущиеся существа в игре (даже пули)
-        self.map = Map(map_file)
-
-        self.player = Player((CELL_SIZE * self.player_pos[0], CELL_SIZE * self.player_pos[1]),
+        self.map = Map(self.level)
+        self.player = Player((self.player_pos[0], self.player_pos[1]),
                              'assets/player.png', (self.entities, self.camera), self.player_bullets)
-        self.enemy = Enemy((CELL_SIZE * self.enemy_pos[0], CELL_SIZE * self.enemy_pos[1]),
-                           'assets/player.png', self.entities, self.enemy_bullets)
+        for i in range(self.enemy_amount):
+            pos_x, pos_y = self.enemy_pos[randint(1, 5)]
+            self.enemy = Enemy((CELL_SIZE * pos_x, CELL_SIZE * pos_y), 'assets/scientist.png', self.entities, self.enemy_bullets, self.enemy_amount)
         # в interface лежат текстуры, которые будут затем выводится на экран без учёта сдвига
         self.interface = []
         # В interface лежат текстуры, которые будут затем выводится на экран
@@ -60,17 +61,14 @@ class Game:
         clock = pygame.time.Clock()
         running = True
 
-        print(self.player.weapon.bullets)
-
         while running:
             self.thread.update_groups.set()  # делаем запрос на обновление персонажа (устанавливаем флажок на True)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
-                    print(*self.player.rect.center)
                     self.save_game('test_level.txt', 'rewards', 10, 1000,
-                                   self.player.rect.center, self.enemy.rect.center)
+                                   self.player.rect.center, self.enemy.rect.center, self.enemy_amount)
                     self.thread.terminated.set()
                     running = False
                 elif event.type == pygame.MOUSEMOTION:
@@ -113,23 +111,39 @@ class Game:
 
         return add_angle + 90 * quart_num
 
-    def save_game(self, current_level, rewards, bullet_amount, enemy_bullets_amount, player_pos, enemy_pos):
+    @staticmethod
+    def save_game(current_level, rewards, bullet_amount, enemy_bullets_amount, player_pos, enemy_pos, enemy_amount):
         with open('progress/progress.txt', mode='w', encoding='utf-8') as pg_file:
             pg_file.write(current_level + '\n')
             pg_file.write(rewards + '\n')
             pg_file.write(str(bullet_amount) + '\n')
             pg_file.write(str(enemy_bullets_amount) + '\n')
-            pg_file.write(f'{player_pos[0] // 250} {player_pos[1] // 250}' + '\n')
-            pg_file.write(f'{enemy_pos[0] // 250} {enemy_pos[1] // 250}')
+            pg_file.write(f'{player_pos[0]} {player_pos[1]}' + '\n')
+            pg_file.write(f'{enemy_pos[0]} {enemy_pos[1]}' + '\n')
+            pg_file.write(str(enemy_amount))
         pg_file.close()
 
-    @staticmethod
-    def start_game():
-        with open('progress/progress.txt', mode='r', encoding='utf-8') as pg_file:
-            level, rewards, player_bullets, enemy_bullets, player_pos, enemy_pos = pg_file.readlines()
+
+    def start_game(self, new_game):
+        if new_game:
+            with open('progress/start_file.txt', mode='r', encoding='utf-8') as pg_file:
+                level, rewards, player_bullets, enemy_bullets, player_pos, enemy_amount = pg_file.readlines()
+        else:
+            with open('progress/progress.txt', mode='r', encoding='utf-8') as pg_file:
+                level, rewards, player_bullets, enemy_bullets, player_pos, enemy_amount = pg_file.readlines()
         pg_file.close()
+        level = level[:-1]
         player_bullets = int(player_bullets)
         enemy_bullets = int(enemy_bullets)
         player_pos = list(map(int, player_pos.split()))
-        enemy_pos = list(map(int, enemy_pos.split()))
-        return level, rewards, player_bullets, enemy_bullets, player_pos, enemy_pos
+        enemy_amount = int(enemy_amount)
+        enemy_pos = []
+        with open(f'maps/{level}', mode='r', encoding='utf-8') as file:
+            lines = file.readlines()
+            x_ind = 0
+            for y in lines[1:-1]:
+                for x in y[1:-1]:
+                    x_ind += 1
+                    if x == '0':
+                        enemy_pos.append((x_ind, lines.index(y)))
+        return level, rewards, player_bullets, enemy_bullets, player_pos, enemy_pos, enemy_amount

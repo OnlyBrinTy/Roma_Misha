@@ -1,10 +1,10 @@
-from shapely import LineString
-from threading import Thread, Event
-from math import sin, cos, radians
-from texture import Texture
-from rectangle import Rect
-from weapon import Weapon
-from time import time
+from shapely import *
+from threading import *
+from math import *
+from texture import *
+from rectangle import *
+from weapon import *
+from time import *
 import numpy as np
 import pygame
 
@@ -13,7 +13,7 @@ BULLET_DAMAGE = 1
 
 class Entity(pygame.sprite.Sprite, Texture):
     def __init__(self, start_pos, file_name, groups):
-        pygame.sprite.Sprite.__init__(self, *groups)
+        pygame.sprite.Sprite.__init__(self, groups)
         Texture.__init__(self, start_pos, pygame.image.load(file_name))
 
         self.vectors = Vectors()
@@ -192,11 +192,11 @@ class Actor:
 
 
 class Player(Entity, Actor):  # Это спрайт для групп camera и entities
-    def __init__(self, start_pos, file_name, groups):
+    def __init__(self, start_pos, file_name, groups, bullets):
         Entity.__init__(self, start_pos, file_name, groups)
 
         self.max_speed = 10
-        self.weapon = Weapon(30)
+        self.weapon = Weapon(bullets)
         self.hp = 1
 
     def motion(self, slowdown):
@@ -238,19 +238,19 @@ class Player(Entity, Actor):  # Это спрайт для групп camera и 
         #   обычный rect нужен для отображения картинки, его размеры зависят от разворота картинки,
         #   а topleft всегда изменяется в зависимости от разворота картинки (чтобы не болтало, как это было раньше)
         self.rect.topleft = self.add_rect.topleft + self.rect_correction
-
     def update(self, delay, group):
         self.basic_entity_update(delay)
         self.basic_actor_update(group)
 
 
 class Enemy(Entity, Actor):
-    def __init__(self, start_pos, file_name, groups):
+    def __init__(self, start_pos, file_name, groups, bullets, enemy_amount):
         Entity.__init__(self, start_pos, file_name, groups)
 
         self.player = self.groups()[0].sprites()[0]
         self.max_speed = 5
-        self.weapon = Weapon(100)
+        self.enemy_amount = enemy_amount
+        self.weapon = Weapon(bullets)
         self.first_noticing = False
         self.hp = 3
 
@@ -277,7 +277,7 @@ class Bullet(Entity):
         Entity.__init__(self, start_pos, file_name, groups)
 
         self.vectors.direction.update(direction)
-        self.vectors.direction /= 10
+        self.vectors.direction /= 5
 
         self.finite_angle, self.angle = angle, angle + 1
         self.set_angle(None)
