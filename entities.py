@@ -51,13 +51,6 @@ class Entity(pygame.sprite.Sprite, Texture):
         self.rect.topleft = self.add_rect.topleft + self.rect_correction  # устанавливаем правильный  topleft
 
     def get_wall_collision(self, walls_group, check_collision=False):
-        def limit(num, if_num, then_num):
-            num += 1
-            if num == if_num:
-                return then_num
-
-            return num
-
         side = walls_group.cell_size
         x_ps = y_ps = np.empty(0, dtype=np.int8)
         positive_x = positive_y = None
@@ -224,12 +217,12 @@ class Actor:
 
 
 class Player(Entity, Actor):  # Это спрайт для групп camera и entities
-    def __init__(self, start_pos, file_name, groups):
+    def __init__(self, start_pos, file_name, groups, bullets):
         Entity.__init__(self, start_pos, file_name, groups)
 
         self.max_speed = 10
-        self.weapon = Weapon(30)
-        self.hp = 100
+        self.weapon = Weapon(bullets)
+        self.hp = 10
 
     def motion(self, slowdown):
         keys = pygame.key.get_pressed()
@@ -269,7 +262,7 @@ class Player(Entity, Actor):  # Это спрайт для групп camera и 
 
 
 class Enemy(Entity, Actor):
-    def __init__(self, start_pos, file_name, groups):
+    def __init__(self, start_pos, file_name, groups, bullets, enemy_amount):
         Entity.__init__(self, start_pos, file_name, groups)
 
         self.wanted_way = pygame.Vector2()
@@ -280,7 +273,7 @@ class Enemy(Entity, Actor):
 
         self.max_speed = 10
         self.hp = 3
-        self.weapon = Weapon(100)
+        self.weapon = Weapon(bullets)
 
     def motion(self, slowdown):
         boost = self.get_adjust(slowdown)

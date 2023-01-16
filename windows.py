@@ -52,7 +52,7 @@ class SettingsWindow(ExtraWindow):
 
         difficulty = {'easy': 1, 'medium': 2, 'hard': 3}[button_text]
 
-        Game(FIRST_LEVEL)
+        Game(True)
 
     def draw(self):
         self.screen.fill(BACKGROUND_COLOR)
@@ -82,7 +82,7 @@ class StartWindow(ExtraWindow):
         if button_text == 'start':  # Обработка нажатия на кнопку start
             SettingsWindow()
         elif button_text == 'continue':  # Обработка нажатия на кнопку continue
-            Game(FIRST_LEVEL)
+            Game(False)
 
     def draw(self):
         self.screen.fill(BACKGROUND_COLOR)

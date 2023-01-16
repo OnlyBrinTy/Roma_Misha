@@ -1,3 +1,7 @@
 test_level.txt
-rewardsффффф
+rewards
 10
+1000
+7911 617
+1270 440
+5

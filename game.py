@@ -1,7 +1,6 @@
 from entities import EntityThread, Player, Enemy
 from math import atan, degrees
 from map import Map
-from time import time
 import pygame
 
 WIDTH, HEIGHT = 1280, 720
@@ -40,17 +39,21 @@ class Camera(pygame.sprite.GroupSingle):
 
 
 class Game:
-    def __init__(self, map_file):
+    def __init__(self, new_game):
         pygame.init()
+
+        self.level, self.rewards, self.player_bullets, \
+            self.enemy_bullets, self.player_pos, self.enemy_pos, self.enemy_amount = self.start_game(new_game)
 
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), vsync=True)
 
         self.camera = Camera()  # через камеру происходит отображение всего на экране
-        self.entities = pygame.sprite.Group()   # все движущиеся существа в игре (даже пули)
-        self.map = Map(map_file)
-
-        self.player = Player((50 * 27, 50 * 30), 'assets/player.png', (self.entities, self.camera))
+        self.entities = pygame.sprite.Group()  # все движущиеся существа в игре (даже пули)
+        self.map = Map(self.level)
+        self.player = Player((self.player_pos[0], self.player_pos[1]),
+                             'assets/player.png', (self.entities, self.camera), self.player_bullets)
         self.enemies = [Enemy(pos, 'assets/player.png', (self.entities,)) for pos in ENEMIES_POSITION['test']]
+
         # в interface лежат текстуры, которые будут затем выводится на экран без учёта сдвига
         self.interface = []
         # В interface лежат текстуры, которые будут затем выводится на экран
@@ -68,7 +71,8 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
-                    SaveGame('test_level.txt', 'rewards', '10')
+                    self.save_game(self.level, 'rewards', 10, 1000,
+                                   self.player.rect.center, self.enemy.rect.center, self.enemy_amount)
                     self.thread.terminated.set()
                     running = False
                 elif event.type == pygame.MOUSEMOTION:
@@ -122,14 +126,38 @@ def check_angle(entity_pos, point_pos):   # определение угла по
 
     return add_angle + 90 * quart_num
 
-
-class SaveGame:
-    def __init__(self, current_checkpoint, rewards, bullet_amount):
-        self.checkpoint = current_checkpoint
-        self.rewards = rewards
-        self.bullet_amount = bullet_amount
+    @staticmethod
+    def save_game(current_level, rewards, bullet_amount, enemy_bullets_amount, player_pos, enemy_pos, enemy_amount):
         with open('progress/progress.txt', mode='w', encoding='utf-8') as pg_file:
-            pg_file.write(self.checkpoint + '\n')
-            pg_file.write(self.rewards + '\n')
-            pg_file.write(self.bullet_amount)
+            pg_file.write(current_level + '\n')
+            pg_file.write(rewards + '\n')
+            pg_file.write(str(bullet_amount) + '\n')
+            pg_file.write(str(enemy_bullets_amount) + '\n')
+            pg_file.write(f'{player_pos[0]} {player_pos[1]}' + '\n')
+            pg_file.write(f'{enemy_pos[0]} {enemy_pos[1]}' + '\n')
+            pg_file.write(str(enemy_amount))
             pg_file.close()
+
+    def start_game(self, new_game):
+        if new_game:
+            with open('progress/start_file.txt', mode='r', encoding='utf-8') as pg_file:
+                level, rewards, player_bullets, enemy_bullets, player_pos, enemy_amount = pg_file.readlines()
+        else:
+            with open('progress/progress.txt', mode='r', encoding='utf-8') as pg_file:
+                level, rewards, player_bullets, enemy_bullets, player_pos, enemy_pos, enemy_amount = pg_file.readlines()
+        pg_file.close()
+        level = level[:-1]
+        player_bullets = int(player_bullets)
+        enemy_bullets = int(enemy_bullets)
+        player_pos = list(map(int, player_pos.split()))
+        enemy_amount = int(enemy_amount)
+        enemy_pos = []
+        with open(f'maps/{level}', mode='r', encoding='utf-8') as file:
+            lines = file.readlines()
+            x_ind = 0
+            for y in lines[1:-1]:
+                for x in y[1:-1]:
+                    x_ind += 1
+                    if x == '0':
+                        enemy_pos.append((x_ind, lines.index(y)))
+        return level, rewards, player_bullets, enemy_bullets, player_pos, enemy_pos, enemy_amount

@@ -5,14 +5,20 @@ import pygame
 pygame.init()
 
 MAPS_DIRECTORY = 'maps'
+sprites_kinds = {0: 'floor', 1: 'wall_1', 2: 'wall_1_1', 3: 'wall_1_2_angle',
+                 4: 'wall_1_2_parallel', 5: 'wall_1_3', 6: 'wall_1_4'}
+walls_kind = {'floor': 0, 'wall_1': 1, 'wall_1_1': 2, 'wall_1_2_angle': 3,
+              'wall_1_2_parallel': 4, 'wall_1_3': 5, 'wall_1_4': 6}
 
 
 class Block(pygame.sprite.Sprite, Texture):
-    def __init__(self, group, kind, position, bounds):
+    def __init__(self, group, kind, position, bounds, rotation_angle):
         pygame.sprite.Sprite.__init__(self, group)
-        Texture.__init__(self, position, pygame.image.load(f'assets/wall_{kind}.png'))
 
-        self.kind = int(bool(int(kind)))  # тип - либо стена - 1 либо пол - 0
+        image = pygame.transform.rotate(pygame.image.load(f'assets/walls/{kind}.png'), 90 * rotation_angle)
+        Texture.__init__(self, position, image)
+
+        self.kind = walls_kind[kind]  # тип - либо стена - 1 либо пол - 0
         self.bounds = array(bounds)  # наличие стен с 4 сторон
         self.mask = pygame.mask.from_surface(self.image)
 
@@ -35,9 +41,6 @@ class Map(pygame.sprite.Group):  # Класс для создания карт
                         if int(bounding_block):
                             bounds[i] = False
 
-            if not any(bounds) and False:
-                return [True] * 4
-
             return bounds
 
         self.cell_size = pygame.image.load('assets/wall_0.png').get_size()[0]
@@ -54,7 +57,71 @@ class Map(pygame.sprite.Group):  # Класс для создания карт
                     if kind != ' ':
                         x, y = j * self.cell_size, i * self.cell_size
                         # записываем данные из файла в список
-                        row.append(Block(self, kind, (x, y), get_bounds(i, j, map_list)))
+                        block_kind = sprites_kinds[int(kind)]
+                        rotation_angle = 0
+
+                        if kind == '1' and i < len(map_list) - 1 and j < len(map_list[0]) - 1:
+                            if map_list[i][j + 1] == '0':
+                                block_kind = sprites_kinds[2]
+                                rotation_angle = -1
+                            elif map_list[i][j - 1] == '0':
+                                block_kind = sprites_kinds[2]
+                                rotation_angle = 1
+                            elif map_list[i + 1][j] == '0':
+                                block_kind = sprites_kinds[2]
+                                rotation_angle = 2
+                            elif map_list[i - 1][j] == '0':
+                                block_kind = sprites_kinds[2]
+                                rotation_angle = 0
+
+                            if map_list[i][j + 1] == '0' and map_list[i + 1][j] == '0':
+                                block_kind = sprites_kinds[3]
+                                rotation_angle = -1
+                            elif map_list[i][j + 1] == '0' and map_list[i - 1][j] == '0':
+                                block_kind = sprites_kinds[3]
+                                rotation_angle = 0
+                            elif map_list[i][j - 1] == '0' and map_list[i + 1][j] == '0':
+                                block_kind = sprites_kinds[3]
+                                rotation_angle = 2
+                            elif map_list[i][j - 1] == '0' and map_list[i - 1][j] == '0':
+                                block_kind = sprites_kinds[3]
+                                rotation_angle = 1
+
+                            if map_list[i][j - 1] == '0' and map_list[i][j + 1] == '0':
+                                block_kind = sprites_kinds[4]
+                                rotation_angle = 1
+                            elif map_list[i - 1][j] == '0' and map_list[i + 1][j] == '0':
+                                block_kind = sprites_kinds[4]
+                                rotation_angle = 0
+
+                            if map_list[i][j - 1] == '0' and map_list[i][j + 1] == '0' and map_list[i - 1][j] == '0':
+                                block_kind = sprites_kinds[5]
+                                rotation_angle = 0
+                            elif map_list[i][j - 1] == '0' and map_list[i][j + 1] == '0' and map_list[i + 1][j] == '0':
+                                block_kind = sprites_kinds[5]
+                                rotation_angle = 2
+                            elif map_list[i][j - 1] == '0' and map_list[i - 1][j] == '0' and map_list[i + 1][j] == '0':
+                                block_kind = sprites_kinds[5]
+                                rotation_angle = 1
+                            elif map_list[i][j + 1] == '0' and map_list[i - 1][j] == '0' and map_list[i + 1][j] == '0':
+                                block_kind = sprites_kinds[5]
+                                rotation_angle = -1
+
+                            if map_list[i][j + 1] == '0' and map_list[i][j - 1] == '0' and \
+                                    map_list[i + 1][j] == '0' and map_list[i - 1][j] == '0':
+                                block_kind = sprites_kinds[6]
+                                rotation_angle = 0
+
+                        elif kind == '1' and i == len(map_list) - 1 and j < len(map_list[0]) - 1:
+                            if map_list[i - 1][j] == '0':
+                                block_kind = sprites_kinds[2]
+                                rotation_angle = 0
+                        elif kind == '1' and j == len(map_list[0]) - 1 and i < len(map_list) - 1:
+                            if map_list[i][j - 1] == '0':
+                                block_kind = sprites_kinds[2]
+                                rotation_angle = 1
+                        row.append(Block(self, block_kind, (j * self.cell_size, i * self.cell_size),
+                                         get_bounds(i, j, map_list), rotation_angle))
 
                         if int(kind):
                             far_x, far_y = x + self.cell_size, y + self.cell_size
@@ -62,5 +129,6 @@ class Map(pygame.sprite.Group):  # Класс для создания карт
                             self.wall_shape.append(Polygon(((x, y), (far_x, y), (far_x, far_y), (x, far_y))))
 
                 self.map.append(row)
+            map_file.close()
 
         self.wall_shape = unary_union(self.wall_shape)
