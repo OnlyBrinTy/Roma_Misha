@@ -1,11 +1,11 @@
 from entities import EntityThread, Player, Enemy
 from math import atan, degrees
 from map import Map
+from time import time
 import pygame
 
-BACKGROUND_COLOR = '#71ddee'
 WIDTH, HEIGHT = 1280, 720
-ENEMIES_POSITION = {'test': ((10 * 50, 5 * 50), (10 * 50, 15 * 50))}
+ENEMIES_POSITION = {'test': ((40 * 50, 30 * 50), (40 * 50, 35 * 50))}
 FPS = 120
 
 
@@ -19,7 +19,6 @@ class Camera(pygame.sprite.GroupSingle):
     def draw(self, groups, interface, screen):
         self.camera_centering()
 
-        screen.fill(BACKGROUND_COLOR)   # заливка фона
         i = 0
         for group in groups:  # каждый спрайт выводится на экран друг за другом с учётом сдвига камеры
             for sprite in group.sprites():
@@ -29,6 +28,13 @@ class Camera(pygame.sprite.GroupSingle):
 
         for texture in interface:
             screen.blit(texture.image, texture.blit_pos)
+
+        # точки куда движутся противники (можно удалить)
+        # for enemy in groups[1].sprites()[1:3]:
+        #     if any(enemy.target_point):
+        #         pygame.draw.circle(screen, 'red', enemy.target_point - self.offset, 10)
+        #     if any(enemy.current_target):
+        #         pygame.draw.circle(screen, 'green', enemy.current_target - self.offset, 10)
 
         pygame.display.update()
 
@@ -43,8 +49,8 @@ class Game:
         self.entities = pygame.sprite.Group()   # все движущиеся существа в игре (даже пули)
         self.map = Map(map_file)
 
-        self.player = Player((50 * 27, 50 * 5), 'assets/player.png', (self.entities, self.camera))
-        self.enemies = [Enemy(pos, 'assets/player.png', (self.entities,)) for pos in ENEMIES_POSITION[self.level]]
+        self.player = Player((50 * 27, 50 * 30), 'assets/player.png', (self.entities, self.camera))
+        self.enemies = [Enemy(pos, 'assets/player.png', (self.entities,)) for pos in ENEMIES_POSITION['test']]
         # в interface лежат текстуры, которые будут затем выводится на экран без учёта сдвига
         self.interface = []
         # В interface лежат текстуры, которые будут затем выводится на экран
@@ -72,10 +78,14 @@ class Game:
                         self.player.to_shoot = True
 
             for enemy in self.enemies:
-                if enemy.check_player(self.map.shapes_map):
-                    enemy.first_noticing = True
+                enemy.check_the_point(self.map.wall_shape, self.player.add_rect.center)
+                if enemy.see_player:
                     enemy.finite_angle = check_angle(enemy.add_rect.center, self.player.add_rect.center)
                     enemy.to_shoot = abs(enemy.angle - enemy.finite_angle) < 5
+                elif not any(enemy.target_point):
+                    enemy.find_random_route(self.map.wall_shape)
+
+
 
             while self.thread.update_groups.is_set():  # ждём пока персонаж не обработает своё положение
                 pass

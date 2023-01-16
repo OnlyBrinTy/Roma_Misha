@@ -1,11 +1,10 @@
-from shapely import Polygon
+from shapely import Polygon, unary_union
 from texture import Texture
 from numpy import array
 import pygame
 pygame.init()
 
 MAPS_DIRECTORY = 'maps'
-CELL_SIZE = pygame.image.load('assets/wall_0.png').get_size()[0]
 
 
 class Block(pygame.sprite.Sprite, Texture):
@@ -36,13 +35,14 @@ class Map(pygame.sprite.Group):  # Класс для создания карт
                         if int(bounding_block):
                             bounds[i] = False
 
-            if not any(bounds):
+            if not any(bounds) and False:
                 return [True] * 4
 
             return bounds
 
-        # это карта в виде полигонов. Пригодится в классе Enemy при проверке видимости игрока
-        self.shapes_map = []
+        self.cell_size = pygame.image.load('assets/wall_0.png').get_size()[0]
+        # это карта в виде полигона. Пригодится в классе Enemy при проверке видимости игрока
+        self.wall_shape = []
         self.map = []  # создание карты
 
         with open(f'{MAPS_DIRECTORY}/{filename}') as map_file:  # открываем файл с картой
@@ -52,17 +52,15 @@ class Map(pygame.sprite.Group):  # Класс для создания карт
                 row = []
                 for j, kind in enumerate(line):
                     if kind != ' ':
-                        x, y = j * CELL_SIZE, i * CELL_SIZE
+                        x, y = j * self.cell_size, i * self.cell_size
                         # записываем данные из файла в список
                         row.append(Block(self, kind, (x, y), get_bounds(i, j, map_list)))
 
                         if int(kind):
+                            far_x, far_y = x + self.cell_size, y + self.cell_size
                             #  добавляем форму в ряд
-
-                            self.shapes_map.append(Polygon(((x, y), (x + CELL_SIZE, y), (x + CELL_SIZE, y + CELL_SIZE),
-                                                            (x, y + CELL_SIZE))))
+                            self.wall_shape.append(Polygon(((x, y), (far_x, y), (far_x, far_y), (x, far_y))))
 
                 self.map.append(row)
 
-    def get_sprite_id(self, sprite_position):  # возвращает id спрайта
-        return self.map[sprite_position[1]][sprite_position[0]]
+        self.wall_shape = unary_union(self.wall_shape)

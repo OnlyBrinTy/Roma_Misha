@@ -2,9 +2,21 @@ class AddList(list):
     def __add__(self, other):
         return AddList([mine + addon for mine, addon in zip(self, other)])
 
+    def __sub__(self, other):
+        return AddList([mine - addon for mine, addon in zip(self, other)])
+
     def __iadd__(self, other):
         for i, addition in enumerate(other):
             self[i] += addition
+
+        return self
+
+    def __eq__(self, other):
+        return self[0] == other[0] and self[1] == other[1]
+
+    def __isub__(self, other):
+        for i, addition in enumerate(other):
+            self[i] -= addition
 
         return self
 

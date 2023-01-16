@@ -97,9 +97,5 @@ class MenuWindow(ExtraWindow):
     pass
 
 
-class UpgradeWindow(ExtraWindow):
-    pass
-
-
 if __name__ == '__main__':
     StartWindow()

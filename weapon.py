@@ -23,7 +23,3 @@ class Weapon:
     def draw(self, screen):
         amo_label = self.font.render(str(self.bullets), True, TEXT_COLOR)
         screen.blit(amo_label, (10, 10))
-
-
-class CurrentWeapon:
-    pass
