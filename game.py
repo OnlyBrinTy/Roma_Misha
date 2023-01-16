@@ -4,7 +4,6 @@ from map import Map
 import pygame
 
 WIDTH, HEIGHT = 1280, 720
-ENEMIES_POSITION = {'test': ((40 * 50, 30 * 50), (40 * 50, 35 * 50))}
 FPS = 120
 
 
@@ -25,8 +24,8 @@ class Camera(pygame.sprite.GroupSingle):
 
             i += 1
 
-        for texture in interface:
-            screen.blit(texture.image, texture.blit_pos)
+        for element in interface:
+            element.draw(screen)
 
         # точки куда движутся противники (можно удалить)
         # for enemy in groups[1].sprites()[1:3]:
@@ -39,23 +38,25 @@ class Camera(pygame.sprite.GroupSingle):
 
 
 class Game:
-    def __init__(self, new_game):
+    def __init__(self, new_game, level=None):
         pygame.init()
 
-        self.level, self.rewards, self.player_bullets, \
-            self.enemy_bullets, self.player_pos, self.enemy_pos, self.enemy_amount = self.start_game(new_game)
+        self.level, player_init, enemies_init = self.start_game(new_game, level)
 
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), vsync=True)
+
+        font = pygame.font.Font('assets/pixeboy.ttf', 90)
+        self.screen.blit(font.render('Loading...', True, 'white'), (WIDTH // 2.6, HEIGHT // 2.2))
+        pygame.display.update()
 
         self.camera = Camera()  # через камеру происходит отображение всего на экране
         self.entities = pygame.sprite.Group()  # все движущиеся существа в игре (даже пули)
         self.map = Map(self.level)
-        self.player = Player((self.player_pos[0], self.player_pos[1]),
-                             'assets/player.png', (self.entities, self.camera), self.player_bullets)
-        self.enemies = [Enemy(pos, 'assets/player.png', (self.entities,)) for pos in ENEMIES_POSITION['test']]
+        self.player = Player(*player_init, 'assets/player.png', (self.entities, self.camera))
+        self.enemies = [Enemy(*init, 'assets/player.png', (self.entities,)) for init in enemies_init]
 
         # в interface лежат текстуры, которые будут затем выводится на экран без учёта сдвига
-        self.interface = []
+        self.interface = [self.player.weapon]
         # В interface лежат текстуры, которые будут затем выводится на экран
         # они лежат в порядке отображения. Сначала рисуем землю и поверх неё рисуем игрока
 
@@ -71,8 +72,13 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
-                    self.save_game(self.level, 'rewards', 10, 1000,
-                                   self.player.rect.center, self.enemy.rect.center, self.enemy_amount)
+
+                    player_info = self.player.rect.center, self.player.weapon.bullets, self.player.hp
+                    enemies_info = []
+                    for enemy in self.enemies:
+                        enemies_info.append((enemy.rect.center, enemy.weapon.bullets, enemy.hp))
+
+                    self.save_game(self.level, player_info, enemies_info)
                     self.thread.terminated.set()
                     running = False
                 elif event.type == pygame.MOUSEMOTION:
@@ -82,14 +88,19 @@ class Game:
                         self.player.to_shoot = True
 
             for enemy in self.enemies:
-                enemy.check_the_point(self.map.wall_shape, self.player.add_rect.center)
-                if enemy.see_player:
-                    enemy.finite_angle = check_angle(enemy.add_rect.center, self.player.add_rect.center)
-                    enemy.to_shoot = abs(enemy.angle - enemy.finite_angle) < 5
-                elif not any(enemy.target_point):
-                    enemy.find_random_route(self.map.wall_shape)
+                if enemy.alive():
+                    enemy.check_the_point(self.map.wall_shape, self.player.add_rect.center)
+                    if enemy.see_player:
+                        enemy.finite_angle = check_angle(enemy.add_rect.center, self.player.add_rect.center)
+                        enemy.to_shoot = abs(enemy.angle - enemy.finite_angle) < 5
+                    elif not any(enemy.target_point):
+                        enemy.find_random_route(self.map.wall_shape)
+                else:
+                    self.enemies.remove(enemy)
 
-
+                    if not self.enemies:
+                        self.thread.terminated.set()
+                        Game(True, int(self.level[6]) + 1)
 
             while self.thread.update_groups.is_set():  # ждём пока персонаж не обработает своё положение
                 pass
@@ -97,6 +108,33 @@ class Game:
             self.camera.draw((self.map, self.entities), self.interface, self.screen)
 
             clock.tick(FPS)
+
+    @staticmethod
+    def save_game(current_level, p_init, enemies_init):
+        with open('progress/progress.txt', mode='w', encoding='utf-8') as pg_file:
+            pg_file.write(current_level + '\n')
+            pg_file.write(' '.join(map(str, (p_init[0][0], p_init[0][1], p_init[1], p_init[2]))) + '\n')
+            pg_file.write('|'.join(map(lambda t: ' '.join(map(str, (t[0][0], t[0][1], t[1], t[2]))), enemies_init)))
+            pg_file.close()
+
+    @staticmethod
+    def start_game(new_game, level):
+        if new_game:
+            file_name = f'progress/level_{level}_info.txt'
+        else:
+            file_name = 'progress/progress.txt'
+
+        with open(file_name, mode='r') as pg_file:
+            level, player, enemies = tuple(map(lambda s: s.replace('\n', ''), pg_file.readlines()))
+
+        pg_file.close()
+        p_x, p_y, p_bullets, p_hp = tuple(map(int, player.split()))
+        enemies = list(map(lambda s: tuple(map(int, s.split())), enemies.split('|')))
+
+        for i, (x, y, bullets, hp) in enumerate(enemies):
+            enemies[i] = (x, y), bullets, hp
+
+        return level, ((p_x, p_y), p_bullets, p_hp), enemies
 
 
 def check_angle(entity_pos, point_pos):   # определение угла поворота в зависимости от положения мыши
@@ -125,39 +163,3 @@ def check_angle(entity_pos, point_pos):   # определение угла по
             add_angle += 90
 
     return add_angle + 90 * quart_num
-
-    @staticmethod
-    def save_game(current_level, rewards, bullet_amount, enemy_bullets_amount, player_pos, enemy_pos, enemy_amount):
-        with open('progress/progress.txt', mode='w', encoding='utf-8') as pg_file:
-            pg_file.write(current_level + '\n')
-            pg_file.write(rewards + '\n')
-            pg_file.write(str(bullet_amount) + '\n')
-            pg_file.write(str(enemy_bullets_amount) + '\n')
-            pg_file.write(f'{player_pos[0]} {player_pos[1]}' + '\n')
-            pg_file.write(f'{enemy_pos[0]} {enemy_pos[1]}' + '\n')
-            pg_file.write(str(enemy_amount))
-            pg_file.close()
-
-    def start_game(self, new_game):
-        if new_game:
-            with open('progress/start_file.txt', mode='r', encoding='utf-8') as pg_file:
-                level, rewards, player_bullets, enemy_bullets, player_pos, enemy_amount = pg_file.readlines()
-        else:
-            with open('progress/progress.txt', mode='r', encoding='utf-8') as pg_file:
-                level, rewards, player_bullets, enemy_bullets, player_pos, enemy_pos, enemy_amount = pg_file.readlines()
-        pg_file.close()
-        level = level[:-1]
-        player_bullets = int(player_bullets)
-        enemy_bullets = int(enemy_bullets)
-        player_pos = list(map(int, player_pos.split()))
-        enemy_amount = int(enemy_amount)
-        enemy_pos = []
-        with open(f'maps/{level}', mode='r', encoding='utf-8') as file:
-            lines = file.readlines()
-            x_ind = 0
-            for y in lines[1:-1]:
-                for x in y[1:-1]:
-                    x_ind += 1
-                    if x == '0':
-                        enemy_pos.append((x_ind, lines.index(y)))
-        return level, rewards, player_bullets, enemy_bullets, player_pos, enemy_pos, enemy_amount

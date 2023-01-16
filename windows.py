@@ -1,8 +1,9 @@
 from button import *
 from game import *
+from os import stat
 import pygame
 
-FIRST_LEVEL = 'test_level.txt'
+FIRST_LEVEL = 'level_1.txt'
 EXTRA_WIDTH, EXTRA_HEIGHT = 600, 400
 BACKGROUND_COLOR = (41, 52, 80)
 
@@ -52,7 +53,10 @@ class SettingsWindow(ExtraWindow):
 
         difficulty = {'easy': 1, 'medium': 2, 'hard': 3}[button_text]
 
-        Game(True)
+        with open("progress/progress.txt", 'r+') as file:
+            file.truncate(0)
+
+        Game(True, 1)
 
     def draw(self):
         self.screen.fill(BACKGROUND_COLOR)
@@ -77,11 +81,14 @@ class StartWindow(ExtraWindow):
 
     @staticmethod
     def action(button_text):
-        pygame.display.quit()
-
         if button_text == 'start':  # Обработка нажатия на кнопку start
+            pygame.display.quit()
+
             SettingsWindow()
-        elif button_text == 'continue':  # Обработка нажатия на кнопку continue
+        # Обработка нажатия на кнопку continue
+        elif button_text == 'continue' and stat("progress/progress.txt").st_size:
+            pygame.display.quit()
+
             Game(False)
 
     def draw(self):
@@ -91,10 +98,6 @@ class StartWindow(ExtraWindow):
             button.draw(self.screen)
 
         pygame.display.update()
-
-
-class MenuWindow(ExtraWindow):
-    pass
 
 
 if __name__ == '__main__':

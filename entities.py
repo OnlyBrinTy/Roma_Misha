@@ -200,9 +200,9 @@ class Actor:
             self.add_rect.x -= wall_entrance[0]  # пробуем вытолкнуться по оси x
             self.rect.topleft = self.add_rect.topleft + self.rect_correction
 
-        if self.get_wall_collision(group, check_collision=True):  # если мы до сих пор в стене
-            self.add_rect.y -= wall_entrance[1]  # пробуем вытолкнуться по оси y
-            self.rect.topleft = self.add_rect.topleft + self.rect_correction
+            if self.get_wall_collision(group, check_collision=True) :  # если мы до сих пор в стене
+                self.add_rect.y -= wall_entrance[1]  # пробуем вытолкнуться по оси y
+                self.rect.topleft = self.add_rect.topleft + self.rect_correction
 
         if self.to_shoot:
             self.shoot()
@@ -217,12 +217,12 @@ class Actor:
 
 
 class Player(Entity, Actor):  # Это спрайт для групп camera и entities
-    def __init__(self, start_pos, file_name, groups, bullets):
+    def __init__(self, start_pos, bullets, hp, file_name, groups):
         Entity.__init__(self, start_pos, file_name, groups)
 
         self.max_speed = 10
         self.weapon = Weapon(bullets)
-        self.hp = 10
+        self.hp = hp
 
     def motion(self, slowdown):
         keys = pygame.key.get_pressed()
@@ -262,7 +262,7 @@ class Player(Entity, Actor):  # Это спрайт для групп camera и 
 
 
 class Enemy(Entity, Actor):
-    def __init__(self, start_pos, file_name, groups, bullets, enemy_amount):
+    def __init__(self, start_pos, bullets, hp, file_name, groups):
         Entity.__init__(self, start_pos, file_name, groups)
 
         self.wanted_way = pygame.Vector2()
@@ -272,7 +272,7 @@ class Enemy(Entity, Actor):
         self.target_point = None, None
 
         self.max_speed = 10
-        self.hp = 3
+        self.hp = hp
         self.weapon = Weapon(bullets)
 
     def motion(self, slowdown):

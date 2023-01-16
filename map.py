@@ -5,9 +5,9 @@ import pygame
 pygame.init()
 
 MAPS_DIRECTORY = 'maps'
-sprites_kinds = {0: 'floor', 1: 'wall_1', 2: 'wall_1_1', 3: 'wall_1_2_angle',
+sprites_kinds = {0: 'wall_0', 1: 'wall_1', 2: 'wall_1_1', 3: 'wall_1_2_angle',
                  4: 'wall_1_2_parallel', 5: 'wall_1_3', 6: 'wall_1_4'}
-walls_kind = {'floor': 0, 'wall_1': 1, 'wall_1_1': 2, 'wall_1_2_angle': 3,
+walls_kind = {'wall_0': 0, 'wall_1': 1, 'wall_1_1': 2, 'wall_1_2_angle': 3,
               'wall_1_2_parallel': 4, 'wall_1_3': 5, 'wall_1_4': 6}
 
 
@@ -43,7 +43,7 @@ class Map(pygame.sprite.Group):  # Класс для создания карт
 
             return bounds
 
-        self.cell_size = pygame.image.load('assets/wall_0.png').get_size()[0]
+        self.cell_size = pygame.image.load('assets/walls/wall_0.png').get_size()[0]
         # это карта в виде полигона. Пригодится в классе Enemy при проверке видимости игрока
         self.wall_shape = []
         self.map = []  # создание карты
