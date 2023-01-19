@@ -1,0 +1,6 @@
+pip~=22.2.2
+setuptools~=47.1.0
+docutils~=0.16
+pygame~=2.1.2
+numpy~=1.23.5
+shapely~=2.0.0
