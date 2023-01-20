@@ -1,19 +1,21 @@
+from texture import Texture
 import pygame
 pygame.init()
 
-text_color = (247, 239, 174)
+BUTTON_TEXT_COLOR = (247, 239, 174)
+LABEL_TEXT_COLOR = 'white'
 
 
 class Button:
     def __init__(self, position, image, text):
         self.text = text
         self.image = image
-        self.rect = self.image.get_rect(topleft=position)   # Прямоугольник картинки
+        self.rect = self.image.get_rect(topleft=position)  # Прямоугольник картинки
 
         # Настройка шрифтов и размеров
         font = int(self.rect.width // len(self.text) * 1.5)
         font = pygame.font.Font('assets/pixeboy.ttf', font)
-        self.label = font.render(self.text, True, text_color)
+        self.label = font.render(self.text, True, BUTTON_TEXT_COLOR)
 
         label_width, label_height = font.size(self.text)  # Размеры текста
         # Центрирование текста в кнопке
@@ -26,3 +28,18 @@ class Button:
 
     def __call__(self):
         return self.text
+
+
+class Label(Texture):
+    def __init__(self, position, text, font):
+        self.font = pygame.font.Font('assets/pixeboy.ttf', font)
+        self.pos = position
+
+        self.change_text(text)
+
+    def change_text(self, new_text):
+        self.text = new_text
+        super().__init__(self.pos, self.font.render(new_text, True, LABEL_TEXT_COLOR))
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect)

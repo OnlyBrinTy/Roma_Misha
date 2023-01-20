@@ -1,38 +1,36 @@
+from time import *
 import pygame
 
 pygame.init()
-text_color = (3, 112, 207)
-background_color = (255, 255, 255)
+TEXT_COLOR = (3, 112, 207)
 
 
 class Weapon:
-    def __init__(self):
-        self.screen = pygame.display.set_mode((400, 400))
-        self.screen.fill((255, 255, 255))
-        self.bullet_amo = 10
-        self.font = pygame.font.Font('assets/pixeboy.ttf', 35)
+    def __init__(self, bullets, magazine, cooldown, reload_time):
+        self.magazine = magazine
+        self.bullets = min(self.magazine, bullets)
+        self.font = pygame.font.Font('assets/pixeboy.ttf', 70)
 
-        amo_label = self.font.render(str(self.bullet_amo), True, text_color)
-        self.screen.blit(amo_label, (10, 10))
+        self.cooldown = cooldown
+        self.reload_time = reload_time
 
-        pygame.display.update()
+        self.timer_start = time()
+        self.reload_timer = time() - self.reload_time
 
-        while True:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    exit()
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    if event.button == 1:
-                        if self.bullet_amo > 0:
-                            self.bullet_amo -= 1
-                            self.draw(self.screen, self.bullet_amo)
+    def shoot(self):
+        if self.bullets:
+            if time() - self.reload_timer >= self.reload_time and time() - self.timer_start >= self.cooldown:
+                self.bullets -= 1
 
-    def draw(self, screen, bullet_amo):
-        screen.fill(background_color)
-        amo_label = self.font.render(str(bullet_amo), True, text_color)
+                self.timer_start = time()
+
+                return True
+        else:
+            self.bullets = self.magazine
+            self.reload_timer = time()
+
+            return False
+
+    def draw(self, screen):
+        amo_label = self.font.render(str(self.bullets), True, TEXT_COLOR)
         screen.blit(amo_label, (10, 10))
-
-        pygame.display.update()
-
-
-Weapon()
