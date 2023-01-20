@@ -64,7 +64,7 @@ class Game:
         pygame.init()
 
         pygame.display.set_caption(GAME_NAME)
-        self.screen = pygame.display.set_mode((WIDTH, HEIGHT), vsync=True)
+        self.screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN, vsync=True)
 
         label_surf = pygame.font.Font('assets/pixeboy.ttf', 90).render('Loading...', True, 'white')
         self.screen.blit(label_surf, label_surf.get_rect(center=(WIDTH // 2, HEIGHT // 2)))

@@ -29,8 +29,6 @@ class Weapon:
             self.bullets = self.magazine
             self.reload_timer = time()
 
-            return False
-
     def draw(self, screen):
         amo_label = self.font.render(str(self.bullets), True, TEXT_COLOR)
         screen.blit(amo_label, (10, 10))

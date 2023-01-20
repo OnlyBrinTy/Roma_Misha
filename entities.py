@@ -1,15 +1,13 @@
 from math import sin, cos, radians, atan, degrees
 from random import randint, getrandbits
-from pydub import AudioSegment
-from pydub.playback import play
 from shapely import LineString, Point
-# from playsound import playsound
 from texture import Texture
 from rectangle import Rect
 from weapon import Weapon
 import numpy as np
 import pygame
 
+CHUNK = 1024
 PLAYER_SPEED = 7
 PLAYER_WEAPON_SPECS = (15, 0.3, 1)
 ENEMY_WEAPON_SPECS = (30, 0.2, 2)
@@ -175,16 +173,8 @@ class Actor:
             direction = self.add_rect.h_width * sin(dir_in_radians), self.add_rect.h_width * cos(dir_in_radians)
 
             Bullet(bullet_pos, 'assets/bullet.png', (self.groups()[0],), direction, self.angle)
-            self.play_sound('C:\\Web\\Roma_Misha\\assets\\sounds.mp3')
-        elif shoot_result == False:
-            self.play_sound('assets/sounds/reload')
 
         self.to_shoot = False
-
-    def play_sound(self, path):
-        return
-        sound = AudioSegment.from_mp3(path)
-        play(sound)
 
     def animation(self):
         for animation_type, state in self.animations_state.items():
@@ -238,7 +228,6 @@ class Actor:
 
         if self.hp <= 0 and not self.animations_state['death']:
             self.animations_state['death'] = 60
-            self.play_sound('assets/sounds/death')
 
         self.animation()
 
