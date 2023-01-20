@@ -75,6 +75,7 @@ class SettingsWindow(ExtraWindow):
             file.truncate(0)
 
         EndWindow(*Game().start(True, difficulty, FIRST_LEVEL))
+        self.running = False
 
 
 class StartWindow(ExtraWindow):
@@ -93,12 +94,14 @@ class StartWindow(ExtraWindow):
 
     def action(self, button_text):
         if button_text == 'start':  # Обработка нажатия на кнопку start
+            self.running = False
             pygame.display.quit()
 
             RulesWindow()
         # Обработка нажатия на кнопку continue
         elif button_text == 'continue':
             if stat("progress/progress.txt").st_size:
+                self.running = False
                 pygame.display.quit()
 
                 EndWindow(*Game().start(False))
@@ -120,9 +123,9 @@ class RulesWindow(ExtraWindow):
 
         super().__init__((start_button,), (rules_1, rules_2, rules_3, rules_4, rules_5, rules_6))
 
-    @staticmethod
-    def action(button_text):
+    def action(self, button_text):
         if button_text == ' ok ':
+            self.running = False
             SettingsWindow()
 
 

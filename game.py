@@ -126,7 +126,7 @@ class Game:
                     enemy.check_the_player(self.map.wall_shape, self.player.add_rect.center)
                     if enemy.see_player:
                         enemy.finite_angle = check_angle(enemy.add_rect.center, self.player.add_rect.center)
-                        enemy.to_shoot = abs(enemy.angle - enemy.finite_angle) < 5
+                        enemy.to_shoot = abs(enemy.angle - enemy.finite_angle) < 10
                     elif not any(enemy.target_point):
                         enemy.find_random_route(self.map.wall_shape)
             else:
