@@ -6,7 +6,7 @@ if __name__ == '__main__':
     from time import time
     from os import stat
 
-FIRST_LEVEL = 1
+FIRST_LEVEL = 3
 GAME_NAME = 'Hotline Fortress'
 EXTRA_WIDTH, EXTRA_HEIGHT = 600, 400    # размеры для окон интерфейса
 BACKGROUND_COLOR = (41, 52, 80)
