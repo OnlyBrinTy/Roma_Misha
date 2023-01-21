@@ -30,7 +30,7 @@ class Button:
         return self.text
 
 
-class Label(Texture):
+class Label(Texture):   # класс для надписи
     def __init__(self, position, text, font):
         self.font = pygame.font.Font('assets/pixeboy.ttf', font)
         self.pos = position

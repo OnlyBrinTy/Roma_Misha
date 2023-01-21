@@ -11,7 +11,8 @@ walls_kind = {'wall_0': 0, 'wall_1': 1, 'wall_1_1': 2, 'wall_1_2_angle': 3,
               'wall_1_2_parallel': 4, 'wall_1_3': 5, 'wall_1_4': 6}
 
 
-class Block(pygame.sprite.Sprite, Texture):
+class Block(pygame.sprite.Sprite, Texture):  # класс для клетки карты
+    #   группа, тип, координаты, границы с клетками пола, угол поворота
     def __init__(self, group, kind, position, bounds, rotation_angle):
         pygame.sprite.Sprite.__init__(self, group)
 
@@ -26,27 +27,30 @@ class Block(pygame.sprite.Sprite, Texture):
         surface.blit(self.image, self.rect)
 
 
-class Map(pygame.sprite.Group):  # Класс для создания карт
+class Map(pygame.sprite.Group):  # Класс для создания карты уровня
     def __init__(self, filename):
         super().__init__()
 
-        def get_bounds(y, x, file):
+        def get_bounds(y, x, file):     # высчитывание границ для блока
+            # координаты соседствующих блоков в порядке [верхняя, нижняя, левая, правая] стена
             cords = (y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)
 
             bounds = [True] * 4
             for i, (bounding_y, bounding_x) in enumerate(cords):
+                # если координата блока не вылазит за край карты
                 if 0 <= bounding_y < len(file) and 0 <= bounding_x < len(file[bounding_y]):
-                    bounding_block = file[bounding_y][bounding_x]
-                    if bounding_block.isdigit():
-                        if int(bounding_block):
+                    bounding_block = file[bounding_y][bounding_x]   # соседствующий блок
+                    if bounding_block.isdigit():    # если это цифра (может быть пробел)
+                        if int(bounding_block):     # если это не 0 (пол)
                             bounds[i] = False
 
             return bounds
 
+        # размер клетки
         self.cell_size = pygame.image.load('assets/walls/wall_0.png').get_size()[0]
-        # это карта в виде полигона. Пригодится в классе Enemy при проверке видимости игрока
+        # это карта записана в виде полигона. Пригодится в классе Enemy при проверке видимости игрока
         self.wall_shape = []
-        self.map = []  # создание карты
+        self.map = []  # список классов блоков
 
         with open(f'{MAPS_DIRECTORY}/{filename}') as map_file:  # открываем файл с картой
             map_list = list(map(str.rstrip, map_file.readlines()))
@@ -123,12 +127,14 @@ class Map(pygame.sprite.Group):  # Класс для создания карт
                         row.append(Block(self, block_kind, (j * self.cell_size, i * self.cell_size),
                                          get_bounds(i, j, map_list), rotation_angle))
 
-                        if int(kind):
-                            far_x, far_y = x + self.cell_size, y + self.cell_size
+                        if int(kind):   # если это стена
+                            far_x, far_y = x + self.cell_size, y + self.cell_size   # дальние грани блока
                             #  добавляем форму в ряд
                             self.wall_shape.append(Polygon(((x, y), (far_x, y), (far_x, far_y), (x, far_y))))
 
                 self.map.append(row)
             map_file.close()
 
+        # полученные в список блоки стен в виде прямоугольников объединяем в один большой полигон,
+        # котороый является соединением всех стен в игре
         self.wall_shape = unary_union(self.wall_shape)

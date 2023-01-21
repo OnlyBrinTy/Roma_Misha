@@ -1,4 +1,4 @@
-class AddList(list):
+class AddList(list):    # по сути обычный список, но его можно складывать и вычитать
     def __add__(self, other):
         return AddList([mine + addon for mine, addon in zip(self, other)])
 

@@ -14,7 +14,7 @@ class Cursor:   # класс для отрисовки прицела
             pygame.mouse.set_visible(1)  # делаем курсор видимым
 
 
-class HpLabel:
+class HpLabel:  # для отображения кол-ва жизней
     font = pygame.font.Font('assets/pixeboy.ttf', 70)
 
     def __init__(self, player):
