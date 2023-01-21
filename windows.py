@@ -8,11 +8,11 @@ if __name__ == '__main__':
 
 FIRST_LEVEL = 1
 GAME_NAME = 'Hotline Fortress'
-EXTRA_WIDTH, EXTRA_HEIGHT = 600, 400
+EXTRA_WIDTH, EXTRA_HEIGHT = 600, 400    # размеры для окон интерфейса
 BACKGROUND_COLOR = (41, 52, 80)
 
 
-class ExtraWindow:
+class ExtraWindow:  # общий класс для всех окон интерфейса
     button_image = pygame.image.load('assets/button.png')
 
     def __init__(self, buttons=(), labels=()):
@@ -20,7 +20,6 @@ class ExtraWindow:
 
         pygame.display.set_caption(GAME_NAME)
 
-        self.text = 10
         self.screen = pygame.display.set_mode((EXTRA_WIDTH, EXTRA_HEIGHT))
 
         self.labels = labels
@@ -37,8 +36,8 @@ class ExtraWindow:
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
                         for button in self.buttons:
-                            if button.rect.collidepoint(event.pos):
-                                self.action(button())
+                            if button.rect.collidepoint(event.pos):  # если мышка над кнопкой
+                                self.action(button())   # делаем что-то в action
 
     def draw(self):
         self.screen.fill(BACKGROUND_COLOR)
@@ -59,6 +58,7 @@ class SettingsWindow(ExtraWindow):
         center_x = (EXTRA_WIDTH - img_rect.width) // 2  # координата х для центрального расположения
         center_y = (EXTRA_HEIGHT - img_rect.height * image_amount) // (image_amount + 1)
 
+        # кнопки для окна
         easy_button = Button((center_x, center_y), self.button_image, 'easy')
         medium_button = Button((center_x, center_y * 2 + img_rect.height), self.button_image, 'medium')
         hard_button = Button((center_x, center_y * 3 + img_rect.height * 2), self.button_image, 'hard')
@@ -74,7 +74,8 @@ class SettingsWindow(ExtraWindow):
         with open("progress/progress.txt", 'r+') as file:
             file.truncate(0)
 
-        EndWindow(*Game().start(True, difficulty, FIRST_LEVEL))
+        game_start_time = time()  # запускем таймер в начале. Отображает время игровой сессии
+        EndWindow(*Game().start(True, difficulty, FIRST_LEVEL), game_start_time)
         self.running = False
 
 
@@ -97,14 +98,16 @@ class StartWindow(ExtraWindow):
             self.running = False
             pygame.display.quit()
 
-            RulesWindow()
+            RulesWindow()   # запуск окна с правилами
         # Обработка нажатия на кнопку continue
         elif button_text == 'continue':
-            if stat("progress/progress.txt").st_size:
+            if stat("progress/progress.txt").st_size:   # если файл с прогрессом не пустой
                 self.running = False
                 pygame.display.quit()
 
-                EndWindow(*Game().start(False))
+                game_start_time = time()  # запускем таймер в начале. Отображает время игровой сессии
+                # Game при завершении вернёт итоговую надпись и счёт
+                EndWindow(*Game().start(False), game_start_time)
             else:
                 self.labels[1].change_text('* You have no saves yet')
 
@@ -130,7 +133,7 @@ class RulesWindow(ExtraWindow):
 
 
 class EndWindow(ExtraWindow):
-    def __init__(self, summary, total_score):
+    def __init__(self, summary, total_score, game_start_time):
         summary_label = Label((EXTRA_WIDTH // 2, 100), summary, 70)
         time_label = Label((EXTRA_WIDTH // 2, 250), f'Time: {int(time() - game_start_time)} sec', 35)
         score_label = Label((EXTRA_WIDTH // 2, 325), f'Score: {total_score}', 35)
@@ -153,12 +156,12 @@ class PauseWindow(ExtraWindow):
 
     def action(self, button_text):
         if button_text == 'save':
-            self.game.save_game()
+            self.game.save_game()   # сохраняем прогресс
+            # изменяем табличку с оставшимися сохранениями
             self.labels[1].change_text(f'You have {self.game.saves_left} saves left')
         elif button_text == 'exit game':
             exit()
 
 
 if __name__ == '__main__':
-    game_start_time = time()
-    StartWindow()
+    StartWindow()   # запуск главного меню
